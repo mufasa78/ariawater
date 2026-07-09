@@ -3,20 +3,32 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Ari Water Commerce & Operations Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: products
+    description: Product catalogue
+  - name: orders
+    description: Order management
+  - name: reviews
+    description: Order reviews
+  - name: dashboard
+    description: Admin dashboard
+  - name: payments
+    description: Payment processing
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +36,407 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ── Auth ──────────────────────────────────────────────────────────────────
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new customer account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "409":
+          description: Email already registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in and receive a session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Log out and destroy session
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get the currently authenticated user
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # ── Products ──────────────────────────────────────────────────────────────
+  /products:
+    get:
+      operationId: listProducts
+      tags: [products]
+      summary: List all active products
+      parameters:
+        - in: query
+          name: category
+          schema:
+            type: string
+          required: false
+        - in: query
+          name: inStock
+          schema:
+            type: string
+            enum: ["true", "false"]
+          required: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+    post:
+      operationId: createProduct
+      tags: [products]
+      summary: Create a product (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+
+  /products/{id}:
+    get:
+      operationId: getProduct
+      tags: [products]
+      summary: Get a single product
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateProduct
+      tags: [products]
+      summary: Update a product (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+    delete:
+      operationId: deleteProduct
+      tags: [products]
+      summary: Delete a product (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  # ── Orders ────────────────────────────────────────────────────────────────
+  /orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List orders (admin sees all; customer sees own)
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [received, processing, dispatched, delivered]
+          required: false
+        - in: query
+          name: page
+          schema:
+            type: integer
+          required: false
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          required: false
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderListResponse"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place a new order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get a single order with line items
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderDetail"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /orders/{id}/status:
+    patch:
+      operationId: updateOrderStatus
+      tags: [orders]
+      summary: Update order status (admin only)
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderStatusUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /orders/{id}/review:
+    post:
+      operationId: createReview
+      tags: [reviews]
+      summary: Submit a review for a delivered order
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReviewInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+
+  # ── Dashboard (admin) ─────────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Admin revenue and order summary (today + this week + all time)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/recent-orders:
+    get:
+      operationId: getRecentOrders
+      tags: [dashboard]
+      summary: Most recent 10 orders with customer info (admin only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecentOrder"
+
+  /dashboard/revenue-trend:
+    get:
+      operationId: getRevenueTrend
+      tags: [dashboard]
+      summary: Daily revenue for the last 30 days (admin only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RevenuePoint"
+
+  # ── Payments ──────────────────────────────────────────────────────────────
+  /payments/initialize:
+    post:
+      operationId: initializePayment
+      tags: [payments]
+      summary: Initialize a Paystack payment for an order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInitInput"
+      responses:
+        "200":
+          description: OK — returns Paystack authorization URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentInitResponse"
+
+  /payments/verify:
+    post:
+      operationId: verifyPayment
+      tags: [payments]
+      summary: Verify a Paystack payment by reference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentVerifyInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentVerifyResponse"
+
+# ── Schemas ───────────────────────────────────────────────────────────────────
 components:
   schemas:
     HealthStatus:
@@ -31,6 +444,417 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required: [success]
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+
+    # Auth
+    RegisterInput:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        password:
+          type: string
+          minLength: 6
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthUser:
+      type: object
+      required: [id, name, email, role]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: ["string", "null"]
+        role:
+          type: string
+          enum: [admin, customer]
+
+    # Products
+    Product:
+      type: object
+      required: [id, name, sku, packSize, priceKes, stockQuantity, isActive, category, createdAt]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: ["string", "null"]
+        packSize:
+          type: string
+        priceKes:
+          type: number
+        stockQuantity:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        category:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductInput:
+      type: object
+      required: [name, sku, packSize, priceKes, stockQuantity, category]
+      properties:
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: ["string", "null"]
+        packSize:
+          type: string
+        priceKes:
+          type: number
+        stockQuantity:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        category:
+          type: string
+
+    ProductUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        sku:
+          type: string
+        description:
+          type: ["string", "null"]
+        packSize:
+          type: string
+        priceKes:
+          type: number
+        stockQuantity:
+          type: integer
+        imageUrl:
+          type: ["string", "null"]
+        isActive:
+          type: boolean
+        category:
+          type: string
+
+    # Orders
+    OrderItem:
+      type: object
+      required: [id, productId, productName, packSize, quantity, unitPriceKes]
+      properties:
+        id:
+          type: integer
+        productId:
+          type: integer
+        productName:
+          type: string
+        packSize:
+          type: string
+        quantity:
+          type: integer
+        unitPriceKes:
+          type: number
+
+    OrderItemInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId:
+          type: integer
+        quantity:
+          type: integer
+          minimum: 1
+
+    Order:
+      type: object
+      required: [id, customerId, status, totalKes, deliveryAddress, phone, paymentStatus, createdAt, updatedAt]
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        customerName:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [received, processing, dispatched, delivered]
+        totalKes:
+          type: number
+        deliveryAddress:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: ["string", "null"]
+        paymentStatus:
+          type: string
+          enum: [pending, completed, failed]
+        paymentMethod:
+          type: ["string", "null"]
+          enum: [mpesa, card, bank_transfer, "null"]
+        paystackRef:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    OrderDetail:
+      type: object
+      required: [id, customerId, status, totalKes, deliveryAddress, phone, paymentStatus, createdAt, updatedAt, items]
+      properties:
+        id:
+          type: integer
+        customerId:
+          type: integer
+        customerName:
+          type: ["string", "null"]
+        customerEmail:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [received, processing, dispatched, delivered]
+        totalKes:
+          type: number
+        deliveryAddress:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: ["string", "null"]
+        paymentStatus:
+          type: string
+          enum: [pending, completed, failed]
+        paymentMethod:
+          type: ["string", "null"]
+        paystackRef:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        review:
+          $ref: "#/components/schemas/Review"
+
+    OrderListResponse:
+      type: object
+      required: [orders, total, page, limit]
+      properties:
+        orders:
+          type: array
+          items:
+            $ref: "#/components/schemas/Order"
+        total:
+          type: integer
+        page:
+          type: integer
+        limit:
+          type: integer
+
+    OrderInput:
+      type: object
+      required: [deliveryAddress, phone, items]
+      properties:
+        deliveryAddress:
+          type: string
+        phone:
+          type: string
+        notes:
+          type: ["string", "null"]
+        paymentMethod:
+          type: string
+          enum: [mpesa, card, bank_transfer]
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItemInput"
+          minItems: 1
+
+    OrderStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [received, processing, dispatched, delivered]
+
+    # Reviews
+    Review:
+      type: object
+      required: [id, orderId, customerId, rating, createdAt]
+      properties:
+        id:
+          type: integer
+        orderId:
+          type: integer
+        customerId:
+          type: integer
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        remark:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    ReviewInput:
+      type: object
+      required: [rating]
+      properties:
+        rating:
+          type: integer
+          minimum: 1
+          maximum: 5
+        remark:
+          type: ["string", "null"]
+
+    # Dashboard
+    DashboardSummary:
+      type: object
+      required: [todayRevenue, todayOrders, weekRevenue, weekOrders, totalRevenue, totalOrders, ordersByStatus, lowStockProducts]
+      properties:
+        todayRevenue:
+          type: number
+        todayOrders:
+          type: integer
+        weekRevenue:
+          type: number
+        weekOrders:
+          type: integer
+        totalRevenue:
+          type: number
+        totalOrders:
+          type: integer
+        ordersByStatus:
+          type: object
+          properties:
+            received:
+              type: integer
+            processing:
+              type: integer
+            dispatched:
+              type: integer
+            delivered:
+              type: integer
+          required: [received, processing, dispatched, delivered]
+        lowStockProducts:
+          type: integer
+
+    RecentOrder:
+      type: object
+      required: [id, customerName, totalKes, status, paymentStatus, createdAt, itemCount]
+      properties:
+        id:
+          type: integer
+        customerName:
+          type: string
+        customerEmail:
+          type: ["string", "null"]
+        totalKes:
+          type: number
+        status:
+          type: string
+          enum: [received, processing, dispatched, delivered]
+        paymentStatus:
+          type: string
+          enum: [pending, completed, failed]
+        createdAt:
+          type: string
+          format: date-time
+        itemCount:
+          type: integer
+
+    RevenuePoint:
+      type: object
+      required: [date, revenue, orders]
+      properties:
+        date:
+          type: string
+          format: date
+        revenue:
+          type: number
+        orders:
+          type: integer
+
+    # Payments
+    PaymentInitInput:
+      type: object
+      required: [orderId]
+      properties:
+        orderId:
+          type: integer
+
+    PaymentInitResponse:
+      type: object
+      required: [authorizationUrl, reference]
+      properties:
+        authorizationUrl:
+          type: string
+        reference:
+          type: string
+
+    PaymentVerifyInput:
+      type: object
+      required: [reference]
+      properties:
+        reference:
+          type: string
+
+    PaymentVerifyResponse:
+      type: object
+      required: [success, status]
+      properties:
+        success:
+          type: boolean
+        status:
+          type: string
+        orderId:
+          type: ["integer", "null"]

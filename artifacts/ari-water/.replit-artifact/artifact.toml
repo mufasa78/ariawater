@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Ari Water"
+version = "1.0.0"
+id = "artifacts/ari-water"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18090
+
+[services.development]
+run = "pnpm --filter @workspace/ari-water run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ari-water", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ari-water/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18090"
+BASE_PATH = "/"
