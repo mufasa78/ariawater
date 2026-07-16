@@ -20,6 +20,10 @@ export default defineSchema({
     imageUrl: v.optional(v.string()),
     isActive: v.boolean(),
     category: v.optional(v.string()),
+    // KRA compliance fields
+    vatClass: v.optional(v.union(v.literal("standard"), v.literal("zero"), v.literal("exempt"))),
+    kraItemCode: v.optional(v.string()),
+    uom: v.optional(v.string()), // unit of measure: piece, carton, litre, kg, unit
   })
     .index("by_sku", ["sku"])
     .index("by_active", ["isActive"]),

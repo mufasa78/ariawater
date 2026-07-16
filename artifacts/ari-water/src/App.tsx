@@ -5,6 +5,8 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { CartProvider } from '@/lib/cart-context';
 import { AppLayout, AdminLayout } from '@/components/layout/Layouts';
+import { useEffect } from 'react';
+import { trackPageView } from '@/lib/analytics';
 
 // Pages
 import Landing from '@/pages/Landing';
@@ -15,78 +17,79 @@ import Register from '@/pages/Register';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
+import AdminMarketing from '@/pages/AdminMarketing';
+import AdminAccounting from '@/pages/AdminAccounting';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
 
-// Protected route wrappers
+// ── Page-view tracking ────────────────────────────────────────────────────────
+function PageTracker() {
+  const [location] = useLocation();
+  useEffect(() => { trackPageView(location); }, [location]);
+  return null;
+}
+
+// ── Route guards ──────────────────────────────────────────────────────────────
 function CustomerRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user) {
-    setLocation('/login');
-    return null;
-  }
+  // Navigate in an effect to avoid setState-during-render warning
+  useEffect(() => {
+    if (!isLoading && !user) setLocation('/login');
+  }, [isLoading, user]);
 
-  return (
-    <AppLayout>
-      <Component />
-    </AppLayout>
-  );
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  if (!user) return null;
+  return <AppLayout><Component /></AppLayout>;
 }
 
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
-  if (!user || user.role !== 'admin') {
-    setLocation('/login');
-    return null;
-  }
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== 'admin')) setLocation('/login');
+  }, [isLoading, user]);
 
-  return (
-    <AdminLayout>
-      <Component />
-    </AdminLayout>
-  );
+  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  if (!user || user.role !== 'admin') return null;
+  return <AdminLayout><Component /></AdminLayout>;
 }
 
-function PublicRoute({ component: Component, hideLayout = false }: { component: React.ComponentType, hideLayout?: boolean }) {
-  if (hideLayout) {
-    return <Component />;
-  }
-  return (
-    <AppLayout>
-      <Component />
-    </AppLayout>
-  );
+function PublicRoute({ component: Component, hideLayout = false }: { component: React.ComponentType; hideLayout?: boolean }) {
+  if (hideLayout) return <Component />;
+  return <AppLayout><Component /></AppLayout>;
 }
 
 function Router() {
   return (
-    <Switch>
-      {/* Public Routes */}
-      <Route path="/" component={() => <PublicRoute component={Landing} />} />
-      <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
-      
-      {/* Auth Routes (No layout) */}
-      <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
-      <Route path="/register" component={() => <PublicRoute component={Register} hideLayout />} />
-      
-      {/* Customer Routes */}
-      <Route path="/orders" component={() => <CustomerRoute component={Orders} />} />
-      
-      {/* Admin Routes */}
-      <Route path="/admin" component={() => <AdminRoute component={AdminDashboard} />} />
-      <Route path="/admin/orders" component={() => <AdminRoute component={AdminOrders} />} />
-      <Route path="/admin/products" component={() => <AdminRoute component={AdminProducts} />} />
-      
-      {/* 404 */}
-      <Route component={() => <PublicRoute component={NotFound} />} />
-    </Switch>
+    <>
+      <PageTracker />
+      <Switch>
+        {/* Public */}
+        <Route path="/" component={() => <PublicRoute component={Landing} />} />
+        <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
+
+        {/* Auth */}
+        <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
+        <Route path="/register" component={() => <PublicRoute component={Register} hideLayout />} />
+
+        {/* Customer */}
+        <Route path="/orders" component={() => <CustomerRoute component={Orders} />} />
+
+        {/* Admin */}
+        <Route path="/admin" component={() => <AdminRoute component={AdminDashboard} />} />
+        <Route path="/admin/orders" component={() => <AdminRoute component={AdminOrders} />} />
+        <Route path="/admin/products" component={() => <AdminRoute component={AdminProducts} />} />
+        <Route path="/admin/marketing" component={() => <AdminRoute component={AdminMarketing} />} />
+        <Route path="/admin/accounting" component={() => <AdminRoute component={AdminAccounting} />} />
+
+        {/* 404 */}
+        <Route component={() => <PublicRoute component={NotFound} />} />
+      </Switch>
+    </>
   );
 }
 

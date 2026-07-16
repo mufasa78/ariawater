@@ -49,6 +49,15 @@ export interface AuthUser {
   role: AuthUserRole;
 }
 
+export type ProductVatClass = typeof ProductVatClass[keyof typeof ProductVatClass];
+
+
+export const ProductVatClass = {
+  standard: 'standard',
+  zero: 'zero',
+  exempt: 'exempt',
+} as const;
+
 export interface Product {
   id: string;
   name: string;
@@ -63,7 +72,20 @@ export interface Product {
   isActive: boolean;
   category: string;
   createdAt: string;
+  vatClass?: ProductVatClass;
+  /** @nullable */
+  kraItemCode?: string | null;
+  uom?: string;
 }
+
+export type ProductInputVatClass = typeof ProductInputVatClass[keyof typeof ProductInputVatClass];
+
+
+export const ProductInputVatClass = {
+  standard: 'standard',
+  zero: 'zero',
+  exempt: 'exempt',
+} as const;
 
 export interface ProductInput {
   name: string;
@@ -77,7 +99,20 @@ export interface ProductInput {
   imageUrl?: string | null;
   isActive?: boolean;
   category: string;
+  vatClass?: ProductInputVatClass;
+  /** @nullable */
+  kraItemCode?: string | null;
+  uom?: string;
 }
+
+export type ProductUpdateVatClass = typeof ProductUpdateVatClass[keyof typeof ProductUpdateVatClass];
+
+
+export const ProductUpdateVatClass = {
+  standard: 'standard',
+  zero: 'zero',
+  exempt: 'exempt',
+} as const;
 
 export interface ProductUpdate {
   name?: string;
@@ -91,6 +126,10 @@ export interface ProductUpdate {
   imageUrl?: string | null;
   isActive?: boolean;
   category?: string;
+  vatClass?: ProductUpdateVatClass;
+  /** @nullable */
+  kraItemCode?: string | null;
+  uom?: string;
 }
 
 export interface OrderItem {

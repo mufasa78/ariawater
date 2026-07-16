@@ -29,6 +29,9 @@ function mapProduct(p: Record<string, unknown>) {
     isActive: p.isActive,
     category: p.category ?? null,
     createdAt: new Date(p._creationTime as number).toISOString(),
+    vatClass: (p.vatClass as string | undefined) ?? "standard",
+    kraItemCode: (p.kraItemCode as string | undefined) ?? null,
+    uom: (p.uom as string | undefined) ?? "piece",
   };
 }
 
@@ -59,7 +62,8 @@ router.get("/:id", async (req, res) => {
   }
 
   const product = await convex.query(api.products.get, {
-    id: params.data.id,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    id: params.data.id as any,
   }) as Record<string, unknown> | null;
 
   if (!product) {
@@ -78,7 +82,7 @@ router.post("/", requireAdmin, async (req, res) => {
     return;
   }
 
-  const { name, sku, description, packSize, priceKes, stockQuantity, imageUrl, isActive, category } = parsed.data;
+  const { name, sku, description, packSize, priceKes, stockQuantity, imageUrl, isActive, category, vatClass, kraItemCode, uom } = parsed.data;
 
   let product: Record<string, unknown> | null;
   try {
@@ -92,6 +96,9 @@ router.post("/", requireAdmin, async (req, res) => {
       imageUrl: imageUrl ?? undefined,
       isActive: isActive ?? true,
       category: category ?? undefined,
+      vatClass: (vatClass as "standard" | "zero" | "exempt") ?? "standard",
+      kraItemCode: kraItemCode ?? undefined,
+      uom: uom ?? "piece",
     }) as Record<string, unknown> | null;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -119,11 +126,22 @@ router.patch("/:id", requireAdmin, async (req, res) => {
     return;
   }
 
+  // Convert null → undefined for optional Convex fields; cast id to branded type
+  const { vatClass, kraItemCode, imageUrl: imgUrl, description: desc, ...rest } = parsed.data;
+  const updatePayload = {
+    ...rest,
+    description: desc ?? undefined,
+    imageUrl: imgUrl ?? undefined,
+    vatClass: vatClass as "standard" | "zero" | "exempt" | undefined,
+    kraItemCode: kraItemCode ?? undefined,
+  };
+
   let product: Record<string, unknown> | null;
   try {
     product = await convex.mutation(api.products.update, {
-      id: params.data.id,
-      ...parsed.data,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      id: params.data.id as any,
+      ...updatePayload,
     }) as Record<string, unknown> | null;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -146,7 +164,8 @@ router.delete("/:id", requireAdmin, async (req, res) => {
   }
 
   try {
-    await convex.mutation(api.products.remove, { id: params.data.id });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await convex.mutation(api.products.remove, { id: params.data.id as any });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("not found")) {

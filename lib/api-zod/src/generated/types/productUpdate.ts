@@ -5,6 +5,7 @@
  * Ari Water Commerce & Operations Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProductUpdateVatClass } from './productUpdateVatClass';
 
 export interface ProductUpdate {
   name?: string;
@@ -18,4 +19,8 @@ export interface ProductUpdate {
   imageUrl?: string | null;
   isActive?: boolean;
   category?: string;
+  vatClass?: ProductUpdateVatClass;
+  /** @nullable */
+  kraItemCode?: string | null;
+  uom?: string;
 }

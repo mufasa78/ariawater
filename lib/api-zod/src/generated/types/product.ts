@@ -5,6 +5,7 @@
  * Ari Water Commerce & Operations Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ProductVatClass } from './productVatClass';
 
 export interface Product {
   id: string;
@@ -20,4 +21,8 @@ export interface Product {
   isActive: boolean;
   category: string;
   createdAt: Date;
+  vatClass?: ProductVatClass;
+  /** @nullable */
+  kraItemCode?: string | null;
+  uom?: string;
 }

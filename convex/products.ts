@@ -43,6 +43,9 @@ export const create = mutation({
     imageUrl: v.optional(v.string()),
     isActive: v.boolean(),
     category: v.optional(v.string()),
+    vatClass: v.optional(v.union(v.literal("standard"), v.literal("zero"), v.literal("exempt"))),
+    kraItemCode: v.optional(v.string()),
+    uom: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
@@ -52,7 +55,11 @@ export const create = mutation({
     if (existing) {
       throw new ConvexError(`SKU ${args.sku} already exists`);
     }
-    const id = await ctx.db.insert("products", args);
+    const id = await ctx.db.insert("products", {
+      ...args,
+      vatClass: args.vatClass ?? "standard", // default to standard 16% VAT
+      uom: args.uom ?? "piece",
+    });
     return ctx.db.get(id);
   },
 });
@@ -68,6 +75,9 @@ export const update = mutation({
     imageUrl: v.optional(v.string()),
     isActive: v.optional(v.boolean()),
     category: v.optional(v.string()),
+    vatClass: v.optional(v.union(v.literal("standard"), v.literal("zero"), v.literal("exempt"))),
+    kraItemCode: v.optional(v.string()),
+    uom: v.optional(v.string()),
   },
   handler: async (ctx, { id, ...patch }) => {
     const existing = await ctx.db.get(id);

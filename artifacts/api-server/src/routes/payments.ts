@@ -43,7 +43,8 @@ router.post("/initialize", requireAuth, async (req, res) => {
   const data = await paystackRes.json() as { status: boolean; data?: { authorization_url: string; reference: string } };
   if (!data.status || !data.data) { res.status(502).json({ error: "Payment provider error" }); return; }
 
-  await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId, paystackRef: data.data.reference, paymentStatus: "pending" });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId as any, paystackRef: data.data.reference, paymentStatus: "pending" });
   res.json(InitializePaymentResponse.parse({ authorizationUrl: data.data.authorization_url, reference: data.data.reference }));
 });
 
@@ -58,9 +59,11 @@ router.post("/verify", requireAuth, async (req, res) => {
   if (!PAYSTACK_SECRET) {
     const order = await convex.query(api.orders.getByPaystackRef, {
       reference,
-      customerId: isAdmin ? undefined : req.user!.userId,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      customerId: isAdmin ? undefined : req.user!.userId as any,
     }) as Record<string, unknown> | null;
-    if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as string, paymentStatus: "completed" });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "completed" });
     res.json(VerifyPaymentResponse.parse({ success: true, status: "success", orderId: (order?._id as string) ?? null }));
     return;
   }
@@ -77,9 +80,11 @@ router.post("/verify", requireAuth, async (req, res) => {
   const payStatus = data.data.status === "success" ? "completed" : "failed";
   const order = await convex.query(api.orders.getByPaystackRef, {
     reference,
-    customerId: isAdmin ? undefined : req.user!.userId,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    customerId: isAdmin ? undefined : req.user!.userId as any,
   }) as Record<string, unknown> | null;
-  if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as string, paymentStatus: payStatus });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: payStatus });
 
   res.json(VerifyPaymentResponse.parse({ success: data.data.status === "success", status: data.data.status, orderId: (order?._id as string) ?? null }));
 });

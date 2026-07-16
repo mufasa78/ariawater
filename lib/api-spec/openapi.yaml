@@ -529,6 +529,13 @@ components:
         createdAt:
           type: string
           format: date-time
+        vatClass:
+          type: string
+          enum: [standard, zero, exempt]
+        kraItemCode:
+          type: ["string", "null"]
+        uom:
+          type: string
 
     ProductInput:
       type: object
@@ -552,6 +559,13 @@ components:
           type: boolean
         category:
           type: string
+        vatClass:
+          type: string
+          enum: [standard, zero, exempt]
+        kraItemCode:
+          type: ["string", "null"]
+        uom:
+          type: string
 
     ProductUpdate:
       type: object
@@ -573,6 +587,13 @@ components:
         isActive:
           type: boolean
         category:
+          type: string
+        vatClass:
+          type: string
+          enum: [standard, zero, exempt]
+        kraItemCode:
+          type: ["string", "null"]
+        uom:
           type: string
 
     # Orders

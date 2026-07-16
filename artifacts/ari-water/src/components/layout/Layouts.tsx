@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/lib/auth-context';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { LayoutDashboard, Package, ShoppingBag, Droplets, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Droplets, LogOut, Megaphone, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -30,6 +30,8 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
     { href: '/admin/products', label: 'Products', icon: Package },
+    { href: '/admin/marketing', label: 'Marketing', icon: Megaphone },
+    { href: '/admin/accounting', label: 'Accounting', icon: Calculator },
   ];
 
   return (

@@ -97,7 +97,10 @@ export const ListProductsResponseItem = zod.object({
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean(),
   "category": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 export const ListProductsResponse = zod.array(ListProductsResponseItem)
 
@@ -114,7 +117,10 @@ export const CreateProductBody = zod.object({
   "stockQuantity": zod.number(),
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean().optional(),
-  "category": zod.string()
+  "category": zod.string(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 
 export const CreateProductResponse = zod.object({
@@ -128,7 +134,10 @@ export const CreateProductResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean(),
   "category": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 
 
@@ -150,7 +159,10 @@ export const GetProductResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean(),
   "category": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 
 
@@ -170,7 +182,10 @@ export const UpdateProductBody = zod.object({
   "stockQuantity": zod.number().optional(),
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean().optional(),
-  "category": zod.string().optional()
+  "category": zod.string().optional(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -184,7 +199,10 @@ export const UpdateProductResponse = zod.object({
   "imageUrl": zod.string().nullish(),
   "isActive": zod.boolean(),
   "category": zod.string(),
-  "createdAt": zod.coerce.date()
+  "createdAt": zod.coerce.date(),
+  "vatClass": zod.enum(['standard', 'zero', 'exempt']).optional(),
+  "kraItemCode": zod.string().nullish(),
+  "uom": zod.string().optional()
 })
 
 
