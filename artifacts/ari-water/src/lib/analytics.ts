@@ -2,6 +2,8 @@
 // Set VITE_GA_MEASUREMENT_ID in your environment to activate tracking.
 // e.g. VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
 
+import { readConsent } from '@/components/layout/CookieConsentBanner';
+
 declare global {
   interface Window {
     dataLayer: unknown[];
@@ -13,7 +15,8 @@ declare global {
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
 
 export function initAnalytics(): void {
-  if (!GA_ID) return;
+  const consent = readConsent();
+  if (!GA_ID || consent === 'declined') return;
 
   const script = document.createElement("script");
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
@@ -29,7 +32,7 @@ export function initAnalytics(): void {
 }
 
 export function trackPageView(path: string, title?: string): void {
-  if (!window.gtag || !GA_ID) return;
+  if (!window.gtag || !GA_ID || readConsent() === 'declined') return;
   window.gtag("event", "page_view", {
     page_path: path,
     page_title: title,
@@ -41,7 +44,7 @@ export function trackEvent(
   name: string,
   params?: Record<string, unknown>,
 ): void {
-  if (!window.gtag) return;
+  if (!window.gtag || readConsent() === 'declined') return;
   window.gtag("event", name, params);
 }
 

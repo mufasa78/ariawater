@@ -82,7 +82,7 @@ export default function Landing() {
       </section>
 
       {/* Trust & Quality Section */}
-      <section className="py-24 bg-white">
+      <section id="quality" className="py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <h2 className="text-3xl md:text-4xl font-display font-bold text-slate-900 mb-4">
@@ -96,7 +96,7 @@ export default function Landing() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-12">
-            <div className="flex flex-col items-center text-center group">
+            <div id="delivery" className="flex flex-col items-center text-center group">
               <div className="h-20 w-20 rounded-2xl bg-secondary flex items-center justify-center mb-6 group-hover:-translate-y-2 transition-transform duration-300">
                 <Droplet className="h-10 w-10 text-primary" />
               </div>
@@ -286,7 +286,7 @@ export default function Landing() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 bg-primary relative overflow-hidden">
+      <section id="contact" className="py-24 bg-primary relative overflow-hidden">
         {/* Abstract shapes */}
         <div className="absolute top-0 right-0 -mr-20 -mt-20 w-96 h-96 rounded-full bg-white/10 blur-3xl" />
         <div className="absolute bottom-0 left-0 -ml-20 -mb-20 w-80 h-80 rounded-full bg-black/10 blur-3xl" />

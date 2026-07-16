@@ -5,6 +5,7 @@ import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
 import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { CartProvider } from '@/lib/cart-context';
 import { AppLayout, AdminLayout } from '@/components/layout/Layouts';
+import { CookieConsentBanner } from '@/components/layout/CookieConsentBanner';
 import { useEffect } from 'react';
 import { trackPageView } from '@/lib/analytics';
 
@@ -14,6 +15,9 @@ import Shop from '@/pages/Shop';
 import Orders from '@/pages/Orders';
 import Login from '@/pages/Login';
 import Register from '@/pages/Register';
+import Privacy from '@/pages/Privacy';
+import Terms from '@/pages/Terms';
+import CookiePolicy from '@/pages/CookiePolicy';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
@@ -76,6 +80,11 @@ function Router() {
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
         <Route path="/register" component={() => <PublicRoute component={Register} hideLayout />} />
 
+        {/* Policies */}
+        <Route path="/privacy" component={() => <PublicRoute component={Privacy} />} />
+        <Route path="/terms" component={() => <PublicRoute component={Terms} />} />
+        <Route path="/cookie-policy" component={() => <PublicRoute component={CookiePolicy} />} />
+
         {/* Customer */}
         <Route path="/orders" component={() => <CustomerRoute component={Orders} />} />
 
@@ -101,6 +110,7 @@ function App() {
           <CartProvider>
             <TooltipProvider>
               <Router />
+              <CookieConsentBanner />
               <Toaster />
             </TooltipProvider>
           </CartProvider>

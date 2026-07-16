@@ -66,14 +66,18 @@ export function Footer() {
             </p>
             <div className="flex items-center gap-4 pt-2">
               <a
-                href="#"
+                href="https://www.instagram.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Instagram"
                 className="bg-white/5 p-2 rounded-full hover:bg-primary/20 hover:text-primary transition-all"
               >
                 <Instagram className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.facebook.com/"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label="Facebook"
                 className="bg-white/5 p-2 rounded-full hover:bg-primary/20 hover:text-primary transition-all"
               >
@@ -154,7 +158,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="/#quality"
                   className="hover:text-primary transition-colors inline-block"
                 >
                   Quality Standards
@@ -162,7 +166,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="/#delivery"
                   className="hover:text-primary transition-colors inline-block"
                 >
                   Delivery Info
@@ -170,7 +174,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="/#contact"
                   className="hover:text-primary transition-colors inline-block"
                 >
                   Contact Us
@@ -178,7 +182,7 @@ export function Footer() {
               </li>
               <li>
                 <a
-                  href="#"
+                  href="/"
                   className="hover:text-primary transition-colors inline-block"
                 >
                   Aritwin Limited
@@ -231,14 +235,18 @@ export function Footer() {
               &copy; {new Date().getFullYear()} Aritwin Limited. Trading as Ari
               Water. All rights reserved.
             </p>
-            <div className="flex items-center gap-6 text-sm text-slate-500">
-              <a href="#" className="hover:text-slate-300 transition-colors">
+            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-slate-500">
+              <Link href="/privacy" className="hover:text-slate-300 transition-colors">
                 Privacy
-              </a>
+              </Link>
               <span className="w-1 h-1 rounded-full bg-slate-700" />
-              <a href="#" className="hover:text-slate-300 transition-colors">
+              <Link href="/terms" className="hover:text-slate-300 transition-colors">
                 Terms
-              </a>
+              </Link>
+              <span className="w-1 h-1 rounded-full bg-slate-700" />
+              <Link href="/cookie-policy" className="hover:text-slate-300 transition-colors">
+                Cookie Policy
+              </Link>
             </div>
           </div>
         </div>
