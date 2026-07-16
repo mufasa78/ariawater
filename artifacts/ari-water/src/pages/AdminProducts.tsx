@@ -223,6 +223,7 @@ function ProductDialog({ open, onOpenChange, product }: { open: boolean; onOpenC
   const handleSave = () => {
     const payload = {
       ...formData,
+      vatClass: formData.vatClass as 'standard' | 'zero' | 'exempt',
       kraItemCode: formData.kraItemCode || null,
       description: formData.description || null,
       imageUrl: formData.imageUrl || null,

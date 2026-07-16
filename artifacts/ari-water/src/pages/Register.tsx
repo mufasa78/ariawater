@@ -46,11 +46,15 @@ export default function Register() {
           });
           setLocation('/shop');
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
+          const errorMessage = typeof error === 'object' && error && 'error' in error && typeof (error as { error?: unknown }).error === 'string'
+            ? (error as { error: string }).error
+            : 'Please check your information and try again';
+
           toast({
             variant: 'destructive',
             title: 'Registration failed',
-            description: error.error || 'Please check your information and try again',
+            description: errorMessage,
           });
         },
       }

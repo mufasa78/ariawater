@@ -46,11 +46,15 @@ export default function Login() {
             setLocation('/shop');
           }
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
+          const errorMessage = typeof error === 'object' && error && 'error' in error && typeof (error as { error?: unknown }).error === 'string'
+            ? (error as { error: string }).error
+            : 'Please check your credentials and try again';
+
           toast({
             variant: 'destructive',
             title: 'Login failed',
-            description: error.error || 'Please check your credentials and try again',
+            description: errorMessage,
           });
         },
       }

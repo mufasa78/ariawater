@@ -18,14 +18,14 @@ router.post("/initialize", requireAuth, async (req, res) => {
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const isAdmin = req.user!.role === "admin";
-  const order = await convex.query(api.orders.get, { id: parsed.data.orderId }) as Record<string, unknown> | null;
+  const order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
   if (!isAdmin && order.customerId !== req.user!.userId) { res.status(403).json({ error: "Access denied" }); return; }
 
   if (!PAYSTACK_SECRET) {
     // Mock mode
     const mockRef = `ARI-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-    await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId, paystackRef: mockRef, paymentStatus: "pending" });
+    await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId as any, paystackRef: mockRef, paymentStatus: "pending" });
     res.json(InitializePaymentResponse.parse({ authorizationUrl: `https://mock-paystack.test/pay/${mockRef}`, reference: mockRef }));
     return;
   }

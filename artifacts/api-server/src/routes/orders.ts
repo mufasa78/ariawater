@@ -86,7 +86,7 @@ router.get("/", requireAuth, async (req, res) => {
     }) as Record<string, unknown>;
   } else {
     result = await convex.query(api.orders.listByCustomer, {
-      customerId: req.user!.userId,
+      customerId: req.user!.userId as any,
       page: page ?? 1,
       limit: limit ?? 20,
     }) as Record<string, unknown>;
@@ -115,13 +115,13 @@ router.post("/", requireAuth, async (req, res) => {
   let order: Record<string, unknown>;
   try {
     order = await convex.mutation(api.orders.create, {
-      customerId: req.user!.userId,
+      customerId: req.user!.userId as any,
       deliveryAddress: parsed.data.deliveryAddress,
       phone: parsed.data.phone,
       notes: parsed.data.notes ?? undefined,
       paymentMethod: parsed.data.paymentMethod ?? undefined,
       items: parsed.data.items.map((item) => ({
-        productId: item.productId,
+        productId: item.productId as any,
         quantity: item.quantity,
       })),
     }) as Record<string, unknown>;
@@ -146,7 +146,7 @@ router.get("/:id", requireAuth, async (req, res) => {
   }
 
   const order = await convex.query(api.orders.get, {
-    id: params.data.id,
+    id: params.data.id as any,
   }) as Record<string, unknown> | null;
 
   if (!order) {
@@ -180,7 +180,7 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
   let order: Record<string, unknown>;
   try {
     order = await convex.mutation(api.orders.updateStatus, {
-      id: params.data.id,
+      id: params.data.id as any,
       status: parsed.data.status,
     }) as Record<string, unknown>;
   } catch (err: unknown) {
@@ -212,8 +212,8 @@ router.post("/:id/review", requireAuth, async (req, res) => {
   let review: Record<string, unknown>;
   try {
     review = await convex.mutation(api.reviews.create, {
-      orderId: params.data.id,
-      customerId: req.user!.userId,
+      orderId: params.data.id as any,
+      customerId: req.user!.userId as any,
       rating: parsed.data.rating,
       comment: parsed.data.remark ?? undefined,
     }) as Record<string, unknown>;

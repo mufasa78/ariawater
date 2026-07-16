@@ -13,7 +13,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 export default function Orders() {
   const { data: ordersData, isLoading: isLoadingOrders } = useListOrders();
-  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
 
   const orders = ordersData?.orders || [];
 
@@ -93,7 +93,7 @@ export default function Orders() {
   );
 }
 
-function OrderDetailDialog({ orderId, onClose }: { orderId: number, onClose: () => void }) {
+function OrderDetailDialog({ orderId, onClose }: { orderId: string, onClose: () => void }) {
   const { data: order, isLoading } = useGetOrder(orderId, {
     query: { enabled: !!orderId, queryKey: getGetOrderQueryKey(orderId) }
   });

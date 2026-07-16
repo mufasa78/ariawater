@@ -15,10 +15,10 @@ export default function AdminOrders() {
   const [page, setPage] = useState(1);
   const limit = 20;
 
-  const queryParams = { 
-    page, 
-    limit, 
-    ...(statusFilter !== 'all' ? { status: statusFilter as any } : {}) 
+  const queryParams: { page: number; limit: number; status?: 'received' | 'processing' | 'dispatched' | 'delivered' } = {
+    page,
+    limit,
+    ...(statusFilter !== 'all' ? { status: statusFilter as 'received' | 'processing' | 'dispatched' | 'delivered' } : {})
   };
 
   const { data: orderResponse, isLoading } = useListOrders(queryParams, {
@@ -124,7 +124,7 @@ export default function AdminOrders() {
   );
 }
 
-function OrderStatusUpdater({ orderId, currentStatus, queryParams }: { orderId: number, currentStatus: string, queryParams: any }) {
+function OrderStatusUpdater({ orderId, currentStatus, queryParams }: { orderId: string, currentStatus: string, queryParams: any }) {
   const updateStatus = useUpdateOrderStatus();
   const queryClient = useQueryClient();
   const { toast } = useToast();

@@ -109,11 +109,15 @@ export default function Shop() {
             setLocation('/orders');
           }
         },
-        onError: (error) => {
+        onError: (error: unknown) => {
+          const errorMessage = typeof error === 'object' && error && 'error' in error && typeof (error as { error?: unknown }).error === 'string'
+            ? (error as { error: string }).error
+            : 'An error occurred';
+
           toast({
             variant: 'destructive',
             title: 'Failed to place order',
-            description: error.error || 'An error occurred',
+            description: errorMessage,
           });
         },
       }
