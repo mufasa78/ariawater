@@ -9,6 +9,7 @@ export default defineConfig(async ({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   const rawPort = env.PORT ?? process.env.PORT;
   const basePath = env.BASE_PATH ?? process.env.BASE_PATH ?? '/';
+  const apiProxyTarget = env.VITE_API_PROXY_TARGET ?? process.env.VITE_API_PROXY_TARGET ?? 'http://127.0.0.1:3000';
 
   const port = Number(rawPort ?? 3000);
   if (Number.isNaN(port) || port <= 0) {
@@ -55,6 +56,13 @@ export default defineConfig(async ({ mode }) => {
       strictPort: true,
       host: '0.0.0.0',
       allowedHosts: true,
+      proxy: {
+        '/api': {
+          target: apiProxyTarget,
+          changeOrigin: true,
+          secure: false,
+        },
+      },
       fs: {
         strict: true,
       },

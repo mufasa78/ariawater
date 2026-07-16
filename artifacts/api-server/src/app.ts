@@ -8,8 +8,10 @@ import { logger } from "./lib/logger";
 if (!process.env.JWT_SECRET) {
   throw new Error("JWT_SECRET must be set.");
 }
-if (!process.env.CONVEX_URL) {
-  throw new Error("CONVEX_URL must be set.");
+
+const convexUrl = process.env.CONVEX_URL ?? process.env.CONVEX_DEPLOYMENT_URL;
+if (!convexUrl) {
+  throw new Error("CONVEX_URL or CONVEX_DEPLOYMENT_URL must be set.");
 }
 
 const app: Express = express();
