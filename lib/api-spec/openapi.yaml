@@ -175,7 +175,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: OK
@@ -198,7 +198,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -221,7 +221,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: OK
@@ -288,7 +288,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       responses:
         "200":
           description: OK
@@ -313,7 +313,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -338,7 +338,7 @@ paths:
           name: id
           required: true
           schema:
-            type: integer
+            type: string
       requestBody:
         required: true
         content:
@@ -490,7 +490,7 @@ components:
       required: [id, name, email, role]
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         email:
@@ -507,7 +507,7 @@ components:
       required: [id, name, sku, packSize, priceKes, stockQuantity, isActive, category, createdAt]
       properties:
         id:
-          type: integer
+          type: string
         name:
           type: string
         sku:
@@ -578,12 +578,12 @@ components:
     # Orders
     OrderItem:
       type: object
-      required: [id, productId, productName, packSize, quantity, unitPriceKes]
+      required: [id, productId, quantity, unitPriceKes]
       properties:
         id:
-          type: integer
+          type: string
         productId:
-          type: integer
+          type: string
         productName:
           type: string
         packSize:
@@ -598,7 +598,7 @@ components:
       required: [productId, quantity]
       properties:
         productId:
-          type: integer
+          type: string
         quantity:
           type: integer
           minimum: 1
@@ -608,9 +608,9 @@ components:
       required: [id, customerId, status, totalKes, deliveryAddress, phone, paymentStatus, createdAt, updatedAt]
       properties:
         id:
-          type: integer
+          type: string
         customerId:
-          type: integer
+          type: string
         customerName:
           type: ["string", "null"]
         status:
@@ -644,9 +644,9 @@ components:
       required: [id, customerId, status, totalKes, deliveryAddress, phone, paymentStatus, createdAt, updatedAt, items]
       properties:
         id:
-          type: integer
+          type: string
         customerId:
-          type: integer
+          type: string
         customerName:
           type: ["string", "null"]
         customerEmail:
@@ -730,11 +730,11 @@ components:
       required: [id, orderId, customerId, rating, createdAt]
       properties:
         id:
-          type: integer
+          type: string
         orderId:
-          type: integer
+          type: string
         customerId:
-          type: integer
+          type: string
         rating:
           type: integer
           minimum: 1
@@ -793,7 +793,7 @@ components:
       required: [id, customerName, totalKes, status, paymentStatus, createdAt, itemCount]
       properties:
         id:
-          type: integer
+          type: string
         customerName:
           type: string
         customerEmail:
@@ -830,7 +830,7 @@ components:
       required: [orderId]
       properties:
         orderId:
-          type: integer
+          type: string
 
     PaymentInitResponse:
       type: object
@@ -857,4 +857,4 @@ components:
         status:
           type: string
         orderId:
-          type: ["integer", "null"]
+          type: ["string", "null"]

@@ -1,103 +1,66 @@
-import { Router, type IRouter } from "express";
-import { eq, and, sql } from "drizzle-orm";
-import { db, productsTable } from "@workspace/db";
+import { Router } from "express";
+import { convex, api } from "../lib/convex-client";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 import {
   ListProductsQueryParams,
+  GetProductParams,
+  DeleteProductParams,
   CreateProductBody,
   UpdateProductBody,
-  GetProductParams,
   UpdateProductParams,
-  DeleteProductParams,
   ListProductsResponse,
-  CreateProductResponse,
   GetProductResponse,
+  CreateProductResponse,
   UpdateProductResponse,
-  DeleteProductResponse,
 } from "@workspace/api-zod";
-import { requireAdmin } from "../middlewares/auth";
 
-const router: IRouter = Router();
+const router: Router = Router();
 
-function mapProduct(p: typeof productsTable.$inferSelect) {
+function mapProduct(p: Record<string, unknown>) {
   return {
-    id: p.id,
+    id: p._id,
     name: p.name,
     sku: p.sku,
     description: p.description ?? null,
     packSize: p.packSize,
-    priceKes: Number(p.priceKes),
+    priceKes: p.priceKes,
     stockQuantity: p.stockQuantity,
     imageUrl: p.imageUrl ?? null,
     isActive: p.isActive,
-    category: p.category,
-    createdAt: p.createdAt.toISOString(),
+    category: p.category ?? null,
+    createdAt: new Date(p._creationTime as number).toISOString(),
   };
 }
 
-router.get("/products", async (req, res): Promise<void> => {
+// GET /api/products
+router.get("/", async (req, res) => {
   const params = ListProductsQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const conditions = [];
+  const { category, inStock } = params.data;
 
-  // Public route — only show active products unless admin
-  const isAdmin = req.session?.userRole === "admin";
-  if (!isAdmin) {
-    conditions.push(eq(productsTable.isActive, true));
-  }
-
-  if (params.data.category) {
-    conditions.push(eq(productsTable.category, params.data.category));
-  }
-
-  if (params.data.inStock === "true") {
-    // Filter to products that have stock available (quantity > 0)
-    conditions.push(sql`${productsTable.stockQuantity} > 0`);
-  }
-
-  const products =
-    conditions.length > 0
-      ? await db
-          .select()
-          .from(productsTable)
-          .where(and(...conditions))
-      : await db.select().from(productsTable);
+  const products = await convex.query(api.products.list, {
+    category: category ?? undefined,
+    inStock: inStock === "true" ? true : undefined,
+  }) as Record<string, unknown>[];
 
   res.json(ListProductsResponse.parse(products.map(mapProduct)));
 });
 
-router.post("/products", requireAdmin, async (req, res): Promise<void> => {
-  const parsed = CreateProductBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const [product] = await db
-    .insert(productsTable)
-    .values({
-      ...parsed.data,
-      priceKes: String(parsed.data.priceKes),
-    })
-    .returning();
-
-  res.status(201).json(CreateProductResponse.parse(mapProduct(product)));
-});
-
-router.get("/products/:id", async (req, res): Promise<void> => {
+// GET /api/products/:id
+router.get("/:id", async (req, res) => {
   const params = GetProductParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [product] = await db
-    .select()
-    .from(productsTable)
-    .where(eq(productsTable.id, params.data.id));
+  const product = await convex.query(api.products.get, {
+    id: params.data.id,
+  }) as Record<string, unknown> | null;
 
   if (!product) {
     res.status(404).json({ error: "Product not found" });
@@ -107,7 +70,43 @@ router.get("/products/:id", async (req, res): Promise<void> => {
   res.json(GetProductResponse.parse(mapProduct(product)));
 });
 
-router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
+// POST /api/products — admin only
+router.post("/", requireAdmin, async (req, res) => {
+  const parsed = CreateProductBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const { name, sku, description, packSize, priceKes, stockQuantity, imageUrl, isActive, category } = parsed.data;
+
+  let product: Record<string, unknown> | null;
+  try {
+    product = await convex.mutation(api.products.create, {
+      name,
+      sku,
+      description: description ?? undefined,
+      packSize,
+      priceKes,
+      stockQuantity,
+      imageUrl: imageUrl ?? undefined,
+      isActive: isActive ?? true,
+      category: category ?? undefined,
+    }) as Record<string, unknown> | null;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("already exists")) {
+      res.status(409).json({ error: msg });
+      return;
+    }
+    throw err;
+  }
+
+  res.status(201).json(CreateProductResponse.parse(mapProduct(product!)));
+});
+
+// PATCH /api/products/:id — admin only
+router.patch("/:id", requireAdmin, async (req, res) => {
   const params = UpdateProductParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -120,44 +119,44 @@ router.patch("/products/:id", requireAdmin, async (req, res): Promise<void> => {
     return;
   }
 
-  const { priceKes, ...rest } = parsed.data;
-  const updateData: Partial<typeof productsTable.$inferInsert> = { ...rest };
-  if (priceKes !== undefined) {
-    updateData.priceKes = String(priceKes);
+  let product: Record<string, unknown> | null;
+  try {
+    product = await convex.mutation(api.products.update, {
+      id: params.data.id,
+      ...parsed.data,
+    }) as Record<string, unknown> | null;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("not found")) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+    throw err;
   }
 
-  const [product] = await db
-    .update(productsTable)
-    .set(updateData)
-    .where(eq(productsTable.id, params.data.id))
-    .returning();
-
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
-  }
-
-  res.json(UpdateProductResponse.parse(mapProduct(product)));
+  res.json(UpdateProductResponse.parse(mapProduct(product!)));
 });
 
-router.delete("/products/:id", requireAdmin, async (req, res): Promise<void> => {
+// DELETE /api/products/:id — admin only
+router.delete("/:id", requireAdmin, async (req, res) => {
   const params = DeleteProductParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const [product] = await db
-    .delete(productsTable)
-    .where(eq(productsTable.id, params.data.id))
-    .returning();
-
-  if (!product) {
-    res.status(404).json({ error: "Product not found" });
-    return;
+  try {
+    await convex.mutation(api.products.remove, { id: params.data.id });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("not found")) {
+      res.status(404).json({ error: "Product not found" });
+      return;
+    }
+    throw err;
   }
 
-  res.json(DeleteProductResponse.parse({ success: true }));
+  res.status(204).send();
 });
 
 export default router;

@@ -1,7 +1,8 @@
-import { Router, type IRouter } from "express";
+import { Router } from "express";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import jwt from "jsonwebtoken";
+import { convex, api } from "../lib/convex-client";
+import { requireAuth } from "../middlewares/auth";
 import {
   RegisterBody,
   LoginBody,
@@ -9,11 +10,30 @@ import {
   LoginResponse,
   GetMeResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
 
-const router: IRouter = Router();
+const router: Router = Router();
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+const COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: (process.env.NODE_ENV === "production" ? "none" : "lax") as
+    | "none"
+    | "lax",
+  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  path: "/",
+};
+
+function signToken(payload: {
+  userId: string;
+  role: "admin" | "customer";
+  name: string;
+  email: string;
+}) {
+  return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "7d" });
+}
+
+// POST /api/auth/register
+router.post("/register", async (req, res) => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -21,39 +41,41 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   }
 
   const { name, email, phone, password } = parsed.data;
-
-  const [existing] = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
-
-  if (existing) {
-    res.status(409).json({ error: "Email already registered" });
-    return;
-  }
-
   const passwordHash = await bcrypt.hash(password, 10);
 
-  const [user] = await db
-    .insert(usersTable)
-    .values({ name, email, phone: phone ?? null, passwordHash, role: "customer" })
-    .returning();
+  let user: { _id: string; name: string; email: string; phone?: string; role: "admin" | "customer" } | null;
+  try {
+    user = await convex.mutation(api.users.create, {
+      name,
+      email,
+      phone: phone ?? undefined,
+      passwordHash,
+      role: "customer",
+    }) as typeof user;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("already registered")) {
+      res.status(409).json({ error: "Email already registered" });
+      return;
+    }
+    throw err;
+  }
 
-  req.session.userId = user.id;
-  req.session.userRole = user.role;
-
+  const token = signToken({ userId: user!._id, role: "customer", name, email });
+  res.cookie("token", token, COOKIE_OPTIONS);
   res.status(201).json(
     RegisterResponse.parse({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone ?? null,
-      role: user.role,
-    })
+      id: user!._id,
+      name,
+      email,
+      phone: phone ?? null,
+      role: "customer",
+    }),
   );
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+// POST /api/auth/login
+router.post("/login", async (req, res) => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -61,63 +83,30 @@ router.post("/auth/login", async (req, res): Promise<void> => {
   }
 
   const { email, password } = parsed.data;
+  const user = await convex.query(api.users.getByEmail, { email }) as {
+    _id: string; name: string; email: string; phone?: string;
+    role: "admin" | "customer"; passwordHash: string;
+  } | null;
 
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email));
-
-  if (!user) {
-    res.status(401).json({ error: "Invalid credentials" });
-    return;
-  }
+  if (!user) { res.status(401).json({ error: "Invalid email or password" }); return; }
 
   const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) {
-    res.status(401).json({ error: "Invalid credentials" });
-    return;
-  }
+  if (!valid) { res.status(401).json({ error: "Invalid email or password" }); return; }
 
-  req.session.userId = user.id;
-  req.session.userRole = user.role;
-
-  res.json(
-    LoginResponse.parse({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone ?? null,
-      role: user.role,
-    })
-  );
+  const token = signToken({ userId: user._id, role: user.role, name: user.name, email: user.email });
+  res.cookie("token", token, COOKIE_OPTIONS);
+  res.json(LoginResponse.parse({ id: user._id, name: user.name, email: user.email, phone: user.phone ?? null, role: user.role }));
 });
 
-router.post("/auth/logout", async (req, res): Promise<void> => {
-  req.session.destroy(() => {
-    res.json({ success: true });
-  });
+// POST /api/auth/logout
+router.post("/logout", (_req, res) => {
+  res.clearCookie("token", { path: "/" });
+  res.json({ success: true });
 });
 
-router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
-  const [user] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, req.session.userId!));
-
-  if (!user) {
-    res.status(401).json({ error: "Not authenticated" });
-    return;
-  }
-
-  res.json(
-    GetMeResponse.parse({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone ?? null,
-      role: user.role,
-    })
-  );
+// GET /api/auth/me
+router.get("/me", requireAuth, (req, res) => {
+  res.json(GetMeResponse.parse({ id: req.user!.userId, name: req.user!.name, email: req.user!.email, phone: null, role: req.user!.role }));
 });
 
 export default router;

@@ -7,5 +7,5 @@
  */
 
 export interface PaymentInitInput {
-  orderId: number;
+  orderId: string;
 }

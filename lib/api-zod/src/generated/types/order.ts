@@ -10,8 +10,8 @@ import type { OrderPaymentStatus } from './orderPaymentStatus';
 import type { OrderStatus } from './orderStatus';
 
 export interface Order {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   /** @nullable */
   customerName?: string | null;
   status: OrderStatus;

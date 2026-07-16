@@ -10,5 +10,5 @@ export interface PaymentVerifyResponse {
   success: boolean;
   status: string;
   /** @nullable */
-  orderId?: number | null;
+  orderId?: string | null;
 }

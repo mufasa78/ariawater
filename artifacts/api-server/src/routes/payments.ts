@@ -1,192 +1,87 @@
-import { Router, type IRouter } from "express";
-import { eq, and } from "drizzle-orm";
-import { db, ordersTable } from "@workspace/db";
+import { Router } from "express";
+import { convex, api } from "../lib/convex-client";
+import { requireAuth } from "../middlewares/auth";
 import {
   InitializePaymentBody,
-  VerifyPaymentBody,
   InitializePaymentResponse,
+  VerifyPaymentBody,
   VerifyPaymentResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
-import { logger } from "../lib/logger";
 
-const router: IRouter = Router();
+const router: Router = Router();
 
-// Paystack integration — uses PAYSTACK_SECRET_KEY env var if available
-const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY ?? "";
+const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 
-router.post("/payments/initialize", requireAuth, async (req, res): Promise<void> => {
+// POST /api/payments/initialize
+router.post("/initialize", requireAuth, async (req, res) => {
   const parsed = InitializePaymentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const isAdmin = req.session.userRole === "admin";
-  const orderConditions = [eq(ordersTable.id, parsed.data.orderId)];
-  if (!isAdmin) {
-    orderConditions.push(eq(ordersTable.customerId, req.session.userId!));
-  }
+  const isAdmin = req.user!.role === "admin";
+  const order = await convex.query(api.orders.get, { id: parsed.data.orderId }) as Record<string, unknown> | null;
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  if (!isAdmin && order.customerId !== req.user!.userId) { res.status(403).json({ error: "Access denied" }); return; }
 
-  const [order] = await db
-    .select()
-    .from(ordersTable)
-    .where(and(...orderConditions));
-
-  if (!order) {
-    res.status(404).json({ error: "Order not found" });
-    return;
-  }
-
-  // If no Paystack key configured, return a mock response (development mode)
   if (!PAYSTACK_SECRET) {
-    const mockRef = `mock_${Date.now()}_${order.id}`;
-    await db
-      .update(ordersTable)
-      .set({ paystackRef: mockRef })
-      .where(eq(ordersTable.id, order.id));
-
-    res.json(
-      InitializePaymentResponse.parse({
-        authorizationUrl: `https://checkout.paystack.com/mock_${mockRef}`,
-        reference: mockRef,
-      })
-    );
+    // Mock mode
+    const mockRef = `ARI-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId, paystackRef: mockRef, paymentStatus: "pending" });
+    res.json(InitializePaymentResponse.parse({ authorizationUrl: `https://mock-paystack.test/pay/${mockRef}`, reference: mockRef }));
     return;
   }
 
-  try {
-    const response = await fetch("https://api.paystack.co/transaction/initialize", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${PAYSTACK_SECRET}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        amount: Math.round(Number(order.totalKes) * 100), // Paystack uses kobo/cents
-        currency: "KES",
-        reference: `ari-${order.id}-${Date.now()}`,
-        callback_url: `${process.env.APP_URL ?? ""}/orders/${order.id}`,
-      }),
-    });
+  const paystackRes = await fetch("https://api.paystack.co/transaction/initialize", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: req.user!.email,
+      amount: Math.round((order.totalKes as number) * 100),
+      reference: `ARI-${parsed.data.orderId}-${Date.now()}`,
+      metadata: { orderId: parsed.data.orderId },
+    }),
+  });
+  const data = await paystackRes.json() as { status: boolean; data?: { authorization_url: string; reference: string } };
+  if (!data.status || !data.data) { res.status(502).json({ error: "Payment provider error" }); return; }
 
-    const data = (await response.json()) as {
-      status: boolean;
-      data?: { authorization_url: string; reference: string };
-      message?: string;
-    };
-
-    if (!data.status || !data.data) {
-      logger.error({ data }, "Paystack initialization failed");
-      res.status(502).json({ error: "Payment initialization failed" });
-      return;
-    }
-
-    await db
-      .update(ordersTable)
-      .set({ paystackRef: data.data.reference })
-      .where(eq(ordersTable.id, order.id));
-
-    res.json(
-      InitializePaymentResponse.parse({
-        authorizationUrl: data.data.authorization_url,
-        reference: data.data.reference,
-      })
-    );
-  } catch (err) {
-    logger.error({ err }, "Paystack request error");
-    res.status(502).json({ error: "Payment service unavailable" });
-  }
+  await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId, paystackRef: data.data.reference, paymentStatus: "pending" });
+  res.json(InitializePaymentResponse.parse({ authorizationUrl: data.data.authorization_url, reference: data.data.reference }));
 });
 
-router.post("/payments/verify", requireAuth, async (req, res): Promise<void> => {
+// POST /api/payments/verify
+router.post("/verify", requireAuth, async (req, res) => {
   const parsed = VerifyPaymentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const { reference } = parsed.data;
+  const isAdmin = req.user!.role === "admin";
 
-  // Mock verification for development
-  if (!PAYSTACK_SECRET || reference.startsWith("mock_")) {
-    const verifyIsAdmin = req.session.userRole === "admin";
-    const verifyConditions = [eq(ordersTable.paystackRef, reference)];
-    if (!verifyIsAdmin) {
-      verifyConditions.push(eq(ordersTable.customerId, req.session.userId!));
-    }
-
-    const [order] = await db
-      .select()
-      .from(ordersTable)
-      .where(and(...verifyConditions));
-
-    if (order) {
-      await db
-        .update(ordersTable)
-        .set({ paymentStatus: "completed" })
-        .where(eq(ordersTable.id, order.id));
-    }
-
-    res.json(
-      VerifyPaymentResponse.parse({
-        success: true,
-        status: "success",
-        orderId: order?.id ?? null,
-      })
-    );
+  if (!PAYSTACK_SECRET) {
+    const order = await convex.query(api.orders.getByPaystackRef, {
+      reference,
+      customerId: isAdmin ? undefined : req.user!.userId,
+    }) as Record<string, unknown> | null;
+    if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as string, paymentStatus: "completed" });
+    res.json(VerifyPaymentResponse.parse({ success: true, status: "success", orderId: (order?._id as string) ?? null }));
     return;
   }
 
-  try {
-    const response = await fetch(
-      `https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`,
-      {
-        headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
-      }
-    );
-
-    const data = (await response.json()) as {
-      status: boolean;
-      data?: { status: string; reference: string };
-    };
-
-    if (!data.status || !data.data) {
-      res.json(VerifyPaymentResponse.parse({ success: false, status: "failed", orderId: null }));
-      return;
-    }
-
-    const payStatus = data.data.status === "success" ? "completed" : "failed";
-
-    const liveIsAdmin = req.session.userRole === "admin";
-    const liveConditions = [eq(ordersTable.paystackRef, reference)];
-    if (!liveIsAdmin) {
-      liveConditions.push(eq(ordersTable.customerId, req.session.userId!));
-    }
-
-    const [order] = await db
-      .select()
-      .from(ordersTable)
-      .where(and(...liveConditions));
-
-    if (order) {
-      await db
-        .update(ordersTable)
-        .set({ paymentStatus: payStatus })
-        .where(eq(ordersTable.id, order.id));
-    }
-
-    res.json(
-      VerifyPaymentResponse.parse({
-        success: payStatus === "completed",
-        status: data.data.status,
-        orderId: order?.id ?? null,
-      })
-    );
-  } catch (err) {
-    logger.error({ err }, "Paystack verify error");
-    res.status(502).json({ error: "Payment service unavailable" });
+  const paystackRes = await fetch(`https://api.paystack.co/transaction/verify/${encodeURIComponent(reference)}`, {
+    headers: { Authorization: `Bearer ${PAYSTACK_SECRET}` },
+  });
+  const data = await paystackRes.json() as { status: boolean; data?: { status: string } };
+  if (!data.status || !data.data) {
+    res.json(VerifyPaymentResponse.parse({ success: false, status: "failed", orderId: null }));
+    return;
   }
+
+  const payStatus = data.data.status === "success" ? "completed" : "failed";
+  const order = await convex.query(api.orders.getByPaystackRef, {
+    reference,
+    customerId: isAdmin ? undefined : req.user!.userId,
+  }) as Record<string, unknown> | null;
+  if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as string, paymentStatus: payStatus });
+
+  res.json(VerifyPaymentResponse.parse({ success: data.data.status === "success", status: data.data.status, orderId: (order?._id as string) ?? null }));
 });
 
 export default router;

@@ -41,7 +41,7 @@ export const AuthUserRole = {
 } as const;
 
 export interface AuthUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   /** @nullable */
@@ -50,7 +50,7 @@ export interface AuthUser {
 }
 
 export interface Product {
-  id: number;
+  id: string;
   name: string;
   sku: string;
   /** @nullable */
@@ -94,16 +94,16 @@ export interface ProductUpdate {
 }
 
 export interface OrderItem {
-  id: number;
-  productId: number;
-  productName: string;
-  packSize: string;
+  id: string;
+  productId: string;
+  productName?: string;
+  packSize?: string;
   quantity: number;
   unitPriceKes: number;
 }
 
 export interface OrderItemInput {
-  productId: number;
+  productId: string;
   /** @minimum 1 */
   quantity: number;
 }
@@ -141,8 +141,8 @@ export const OrderPaymentMethod = {
 } as const;
 
 export interface Order {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   /** @nullable */
   customerName?: string | null;
   status: OrderStatus;
@@ -180,9 +180,9 @@ export const OrderDetailPaymentStatus = {
 } as const;
 
 export interface Review {
-  id: number;
-  orderId: number;
-  customerId: number;
+  id: string;
+  orderId: string;
+  customerId: string;
   /**
      * @minimum 1
      * @maximum 5
@@ -194,8 +194,8 @@ export interface Review {
 }
 
 export interface OrderDetail {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   /** @nullable */
   customerName?: string | null;
   /** @nullable */
@@ -305,7 +305,7 @@ export const RecentOrderPaymentStatus = {
 } as const;
 
 export interface RecentOrder {
-  id: number;
+  id: string;
   customerName: string;
   /** @nullable */
   customerEmail?: string | null;
@@ -323,7 +323,7 @@ export interface RevenuePoint {
 }
 
 export interface PaymentInitInput {
-  orderId: number;
+  orderId: string;
 }
 
 export interface PaymentInitResponse {
@@ -339,7 +339,7 @@ export interface PaymentVerifyResponse {
   success: boolean;
   status: string;
   /** @nullable */
-  orderId?: number | null;
+  orderId?: string | null;
 }
 
 export type ListProductsParams = {

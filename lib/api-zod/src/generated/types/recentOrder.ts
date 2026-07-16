@@ -9,7 +9,7 @@ import type { RecentOrderPaymentStatus } from './recentOrderPaymentStatus';
 import type { RecentOrderStatus } from './recentOrderStatus';
 
 export interface RecentOrder {
-  id: number;
+  id: string;
   customerName: string;
   /** @nullable */
   customerEmail?: string | null;

@@ -1,6 +1,6 @@
-import { Router, type IRouter } from "express";
-import { eq, and, desc, sql } from "drizzle-orm";
-import { db, ordersTable, orderItemsTable, productsTable, usersTable, reviewsTable } from "@workspace/db";
+import { Router } from "express";
+import { convex, api } from "../lib/convex-client";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 import {
   ListOrdersQueryParams,
   CreateOrderBody,
@@ -15,230 +15,156 @@ import {
   UpdateOrderStatusResponse,
   CreateReviewResponse,
 } from "@workspace/api-zod";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
 
-const router: IRouter = Router();
+const router: Router = Router();
 
-function mapOrder(o: typeof ordersTable.$inferSelect, customerName?: string | null, customerEmail?: string | null) {
+function mapOrder(o: Record<string, unknown>) {
   return {
-    id: o.id,
+    id: o._id,
     customerId: o.customerId,
-    customerName: customerName ?? null,
-    customerEmail: customerEmail ?? null,
+    customerName: o.customerName ?? null,
+    customerEmail: o.customerEmail ?? null,
     status: o.status,
-    totalKes: Number(o.totalKes),
+    totalKes: o.totalKes,
     deliveryAddress: o.deliveryAddress,
     phone: o.phone,
     notes: o.notes ?? null,
     paymentStatus: o.paymentStatus,
     paymentMethod: o.paymentMethod ?? null,
     paystackRef: o.paystackRef ?? null,
-    createdAt: o.createdAt.toISOString(),
-    updatedAt: o.updatedAt.toISOString(),
+    createdAt: new Date(o._creationTime as number).toISOString(),
+    updatedAt: new Date((o.updatedAt as number) ?? (o._creationTime as number)).toISOString(),
+    items: (o.items as unknown[] | undefined)?.map(mapOrderItem) ?? undefined,
+    review: (o.review as Record<string, unknown> | null | undefined) ? mapReview(o.review as Record<string, unknown>) : undefined,
+    itemCount: o.itemCount,
   };
 }
 
-router.get("/orders", requireAuth, async (req, res): Promise<void> => {
+function mapOrderItem(i: unknown) {
+  const item = i as Record<string, unknown>;
+  return {
+    id: item._id,
+    orderId: item.orderId,
+    productId: item.productId,
+    productName: item.productName ?? null,
+    productSku: item.productSku ?? null,
+    imageUrl: item.imageUrl ?? null,
+    quantity: item.quantity,
+    unitPriceKes: item.unitPriceKes,
+  };
+}
+
+function mapReview(r: Record<string, unknown>) {
+  return {
+    id: r._id,
+    orderId: r.orderId,
+    customerId: r.customerId,
+    rating: r.rating,
+    remark: r.comment ?? null,
+    createdAt: new Date(r._creationTime as number).toISOString(),
+  };
+}
+
+// GET /api/orders — customer sees own, admin sees all
+router.get("/", requireAuth, async (req, res) => {
   const params = ListOrdersQueryParams.safeParse(req.query);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const isAdmin = req.session.userRole === "admin";
-  const page = params.data.page ?? 1;
-  const limit = params.data.limit ?? 20;
-  const offset = (page - 1) * limit;
+  const { page, limit, status } = params.data;
+  const isAdmin = req.user!.role === "admin";
 
-  const conditions = [];
-  if (!isAdmin) {
-    conditions.push(eq(ordersTable.customerId, req.session.userId!));
-  }
-  if (params.data.status) {
-    conditions.push(eq(ordersTable.status, params.data.status));
-  }
+  let result: Record<string, unknown>;
 
-  const query = db
-    .select({
-      order: ordersTable,
-      customerName: usersTable.name,
-    })
-    .from(ordersTable)
-    .leftJoin(usersTable, eq(ordersTable.customerId, usersTable.id))
-    .orderBy(desc(ordersTable.createdAt))
-    .limit(limit)
-    .offset(offset);
-
-  if (conditions.length > 0) {
-    query.where(and(...conditions));
+  if (isAdmin) {
+    result = await convex.query(api.orders.listAll, {
+      status: status ?? undefined,
+      page: page ?? 1,
+      limit: limit ?? 50,
+    }) as Record<string, unknown>;
+  } else {
+    result = await convex.query(api.orders.listByCustomer, {
+      customerId: req.user!.userId,
+      page: page ?? 1,
+      limit: limit ?? 20,
+    }) as Record<string, unknown>;
   }
 
-  const rows = await query;
-  const orders = rows.map((r) => ({
-    ...mapOrder(r.order, r.customerName),
-  }));
+  const { orders, total } = result as { orders: Record<string, unknown>[], total: number };
 
-  // Count total
-  const countQuery = db
-    .select({ count: sql<number>`count(*)` })
-    .from(ordersTable);
-  if (conditions.length > 0) {
-    countQuery.where(and(...conditions));
-  }
-  const [{ count }] = await countQuery;
-
-  res.json(ListOrdersResponse.parse({ orders, total: Number(count), page, limit }));
+  res.json(
+    ListOrdersResponse.parse({
+      orders: orders.map(mapOrder),
+      total,
+      page: page ?? 1,
+      limit: isAdmin ? (limit ?? 50) : (limit ?? 20),
+    }),
+  );
 });
 
-router.post("/orders", requireAuth, async (req, res): Promise<void> => {
+// POST /api/orders
+router.post("/", requireAuth, async (req, res) => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
-  const { deliveryAddress, phone, notes, paymentMethod, items } = parsed.data;
-
-  // Run everything inside a single transaction with FOR UPDATE locks on products
-  let createdOrder: typeof ordersTable.$inferSelect;
-
+  let order: Record<string, unknown>;
   try {
-    createdOrder = await db.transaction(async (tx) => {
-      let totalKes = 0;
-      const resolvedItems: { productId: number; quantity: number; unitPriceKes: number }[] = [];
-
-      for (const item of items) {
-        // Lock the product row to prevent concurrent oversell
-        const [product] = await tx
-          .select()
-          .from(productsTable)
-          .where(and(eq(productsTable.id, item.productId), eq(productsTable.isActive, true)))
-          .for("update");
-
-        if (!product) {
-          throw Object.assign(new Error(`Product ${item.productId} not found or inactive`), { statusCode: 400 });
-        }
-
-        if (product.stockQuantity < item.quantity) {
-          throw Object.assign(new Error(`Insufficient stock for ${product.name}`), { statusCode: 400 });
-        }
-
-        const unitPrice = Number(product.priceKes);
-        totalKes += unitPrice * item.quantity;
-        resolvedItems.push({ productId: item.productId, quantity: item.quantity, unitPriceKes: unitPrice });
-      }
-
-      // Insert order
-      const [order] = await tx
-        .insert(ordersTable)
-        .values({
-          customerId: req.session.userId!,
-          status: "received",
-          totalKes: String(totalKes),
-          deliveryAddress,
-          phone,
-          notes: notes ?? null,
-          paymentMethod: paymentMethod ?? null,
-          paymentStatus: "pending",
-        })
-        .returning();
-
-      // Insert order items and atomically decrement stock
-      for (const item of resolvedItems) {
-        await tx.insert(orderItemsTable).values({
-          orderId: order.id,
-          productId: item.productId,
-          quantity: item.quantity,
-          unitPriceKes: String(item.unitPriceKes),
-        });
-
-        await tx
-          .update(productsTable)
-          .set({ stockQuantity: sql`${productsTable.stockQuantity} - ${item.quantity}` })
-          .where(eq(productsTable.id, item.productId));
-      }
-
-      return order;
-    });
+    order = await convex.mutation(api.orders.create, {
+      customerId: req.user!.userId,
+      deliveryAddress: parsed.data.deliveryAddress,
+      phone: parsed.data.phone,
+      notes: parsed.data.notes ?? undefined,
+      paymentMethod: parsed.data.paymentMethod ?? undefined,
+      items: parsed.data.items.map((item) => ({
+        productId: item.productId,
+        quantity: item.quantity,
+      })),
+    }) as Record<string, unknown>;
   } catch (err: unknown) {
-    const e = err as { statusCode?: number; message?: string };
-    if (e.statusCode) {
-      res.status(e.statusCode).json({ error: e.message });
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("Insufficient stock") || msg.includes("not found")) {
+      res.status(400).json({ error: msg });
       return;
     }
     throw err;
   }
 
-  res.status(201).json(CreateOrderResponse.parse(mapOrder(createdOrder)));
+  res.status(201).json(CreateOrderResponse.parse(mapOrder(order)));
 });
 
-router.get("/orders/:id", requireAuth, async (req, res): Promise<void> => {
+// GET /api/orders/:id
+router.get("/:id", requireAuth, async (req, res) => {
   const params = GetOrderParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
 
-  const isAdmin = req.session.userRole === "admin";
-  const conditions = [eq(ordersTable.id, params.data.id)];
-  if (!isAdmin) {
-    conditions.push(eq(ordersTable.customerId, req.session.userId!));
-  }
+  const order = await convex.query(api.orders.get, {
+    id: params.data.id,
+  }) as Record<string, unknown> | null;
 
-  const [row] = await db
-    .select({ order: ordersTable, customerName: usersTable.name, customerEmail: usersTable.email })
-    .from(ordersTable)
-    .leftJoin(usersTable, eq(ordersTable.customerId, usersTable.id))
-    .where(and(...conditions));
-
-  if (!row) {
+  if (!order) {
     res.status(404).json({ error: "Order not found" });
     return;
   }
 
-  // Get order items
-  const itemRows = await db
-    .select({ item: orderItemsTable, product: productsTable })
-    .from(orderItemsTable)
-    .leftJoin(productsTable, eq(orderItemsTable.productId, productsTable.id))
-    .where(eq(orderItemsTable.orderId, row.order.id));
+  // Customers can only see their own orders
+  if (req.user!.role !== "admin" && order.customerId !== req.user!.userId) {
+    res.status(403).json({ error: "Access denied" });
+    return;
+  }
 
-  const items = itemRows.map((r) => ({
-    id: r.item.id,
-    productId: r.item.productId,
-    productName: r.product?.name ?? "Unknown",
-    packSize: r.product?.packSize ?? "",
-    quantity: r.item.quantity,
-    unitPriceKes: Number(r.item.unitPriceKes),
-  }));
-
-  // Get review if exists
-  const [review] = await db
-    .select()
-    .from(reviewsTable)
-    .where(eq(reviewsTable.orderId, row.order.id));
-
-  const mappedReview = review
-    ? {
-        id: review.id,
-        orderId: review.orderId,
-        customerId: review.customerId,
-        rating: review.rating,
-        remark: review.remark ?? null,
-        createdAt: review.createdAt.toISOString(),
-      }
-    : undefined;
-
-  res.json(
-    GetOrderResponse.parse({
-      ...mapOrder(row.order, row.customerName, row.customerEmail),
-      items,
-      review: mappedReview,
-    })
-  );
+  res.json(GetOrderResponse.parse(mapOrder(order)));
 });
 
-router.patch("/orders/:id/status", requireAdmin, async (req, res): Promise<void> => {
+// PATCH /api/orders/:id/status — admin only
+router.patch("/:id/status", requireAdmin, async (req, res) => {
   const params = UpdateOrderStatusParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -251,21 +177,26 @@ router.patch("/orders/:id/status", requireAdmin, async (req, res): Promise<void>
     return;
   }
 
-  const [order] = await db
-    .update(ordersTable)
-    .set({ status: parsed.data.status, updatedAt: new Date() })
-    .where(eq(ordersTable.id, params.data.id))
-    .returning();
-
-  if (!order) {
-    res.status(404).json({ error: "Order not found" });
-    return;
+  let order: Record<string, unknown>;
+  try {
+    order = await convex.mutation(api.orders.updateStatus, {
+      id: params.data.id,
+      status: parsed.data.status,
+    }) as Record<string, unknown>;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("not found")) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    throw err;
   }
 
   res.json(UpdateOrderStatusResponse.parse(mapOrder(order)));
 });
 
-router.post("/orders/:id/review", requireAuth, async (req, res): Promise<void> => {
+// POST /api/orders/:id/review
+router.post("/:id/review", requireAuth, async (req, res) => {
   const params = CreateReviewParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -278,42 +209,28 @@ router.post("/orders/:id/review", requireAuth, async (req, res): Promise<void> =
     return;
   }
 
-  // Verify the order belongs to the customer and is delivered
-  const [order] = await db
-    .select()
-    .from(ordersTable)
-    .where(and(eq(ordersTable.id, params.data.id), eq(ordersTable.customerId, req.session.userId!)));
-
-  if (!order) {
-    res.status(404).json({ error: "Order not found" });
-    return;
-  }
-
-  if (order.status !== "delivered") {
-    res.status(400).json({ error: "Can only review delivered orders" });
-    return;
-  }
-
-  const [review] = await db
-    .insert(reviewsTable)
-    .values({
+  let review: Record<string, unknown>;
+  try {
+    review = await convex.mutation(api.reviews.create, {
       orderId: params.data.id,
-      customerId: req.session.userId!,
+      customerId: req.user!.userId,
       rating: parsed.data.rating,
-      remark: parsed.data.remark ?? null,
-    })
-    .returning();
+      comment: parsed.data.remark ?? undefined,
+    }) as Record<string, unknown>;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (msg.includes("not found")) {
+      res.status(404).json({ error: "Order not found" });
+      return;
+    }
+    if (msg.includes("Not your order") || msg.includes("must be delivered") || msg.includes("already reviewed")) {
+      res.status(400).json({ error: msg });
+      return;
+    }
+    throw err;
+  }
 
-  res.status(201).json(
-    CreateReviewResponse.parse({
-      id: review.id,
-      orderId: review.orderId,
-      customerId: review.customerId,
-      rating: review.rating,
-      remark: review.remark ?? null,
-      createdAt: review.createdAt.toISOString(),
-    })
-  );
+  res.status(201).json(CreateReviewResponse.parse(mapReview(review)));
 });
 
 export default router;

@@ -33,7 +33,7 @@ export const RegisterBody = zod.object({
 })
 
 export const RegisterResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
@@ -50,7 +50,7 @@ export const LoginBody = zod.object({
 })
 
 export const LoginResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
@@ -70,7 +70,7 @@ export const LogoutResponse = zod.object({
  * @summary Get the currently authenticated user
  */
 export const GetMeResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
@@ -87,7 +87,7 @@ export const ListProductsQueryParams = zod.object({
 })
 
 export const ListProductsResponseItem = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "sku": zod.string(),
   "description": zod.string().nullish(),
@@ -118,7 +118,7 @@ export const CreateProductBody = zod.object({
 })
 
 export const CreateProductResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "sku": zod.string(),
   "description": zod.string().nullish(),
@@ -136,11 +136,11 @@ export const CreateProductResponse = zod.object({
  * @summary Get a single product
  */
 export const GetProductParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const GetProductResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "sku": zod.string(),
   "description": zod.string().nullish(),
@@ -158,7 +158,7 @@ export const GetProductResponse = zod.object({
  * @summary Update a product (admin only)
  */
 export const UpdateProductParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const UpdateProductBody = zod.object({
@@ -174,7 +174,7 @@ export const UpdateProductBody = zod.object({
 })
 
 export const UpdateProductResponse = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "name": zod.string(),
   "sku": zod.string(),
   "description": zod.string().nullish(),
@@ -192,7 +192,7 @@ export const UpdateProductResponse = zod.object({
  * @summary Delete a product (admin only)
  */
 export const DeleteProductParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const DeleteProductResponse = zod.object({
@@ -211,8 +211,8 @@ export const ListOrdersQueryParams = zod.object({
 
 export const ListOrdersResponse = zod.object({
   "orders": zod.array(zod.object({
-  "id": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "customerId": zod.string(),
   "customerName": zod.string().nullish(),
   "status": zod.enum(['received', 'processing', 'dispatched', 'delivered']),
   "totalKes": zod.number(),
@@ -244,14 +244,14 @@ export const CreateOrderBody = zod.object({
   "notes": zod.string().nullish(),
   "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer']).optional(),
   "items": zod.array(zod.object({
-  "productId": zod.number(),
+  "productId": zod.string(),
   "quantity": zod.number().min(1)
 })).min(1)
 })
 
 export const CreateOrderResponse = zod.object({
-  "id": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "customerId": zod.string(),
   "customerName": zod.string().nullish(),
   "status": zod.enum(['received', 'processing', 'dispatched', 'delivered']),
   "totalKes": zod.number(),
@@ -270,7 +270,7 @@ export const CreateOrderResponse = zod.object({
  * @summary Get a single order with line items
  */
 export const GetOrderParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const getOrderResponseReviewRatingMax = 5;
@@ -278,8 +278,8 @@ export const getOrderResponseReviewRatingMax = 5;
 
 
 export const GetOrderResponse = zod.object({
-  "id": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "customerId": zod.string(),
   "customerName": zod.string().nullish(),
   "customerEmail": zod.string().nullish(),
   "status": zod.enum(['received', 'processing', 'dispatched', 'delivered']),
@@ -293,17 +293,17 @@ export const GetOrderResponse = zod.object({
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "items": zod.array(zod.object({
-  "id": zod.number(),
-  "productId": zod.number(),
-  "productName": zod.string(),
-  "packSize": zod.string(),
+  "id": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string().optional(),
+  "packSize": zod.string().optional(),
   "quantity": zod.number(),
   "unitPriceKes": zod.number()
 })),
   "review": zod.object({
-  "id": zod.number(),
-  "orderId": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "customerId": zod.string(),
   "rating": zod.number().min(1).max(getOrderResponseReviewRatingMax),
   "remark": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -315,7 +315,7 @@ export const GetOrderResponse = zod.object({
  * @summary Update order status (admin only)
  */
 export const UpdateOrderStatusParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const UpdateOrderStatusBody = zod.object({
@@ -323,8 +323,8 @@ export const UpdateOrderStatusBody = zod.object({
 })
 
 export const UpdateOrderStatusResponse = zod.object({
-  "id": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "customerId": zod.string(),
   "customerName": zod.string().nullish(),
   "status": zod.enum(['received', 'processing', 'dispatched', 'delivered']),
   "totalKes": zod.number(),
@@ -343,7 +343,7 @@ export const UpdateOrderStatusResponse = zod.object({
  * @summary Submit a review for a delivered order
  */
 export const CreateReviewParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.string()
 })
 
 export const createReviewBodyRatingMax = 5;
@@ -360,9 +360,9 @@ export const createReviewResponseRatingMax = 5;
 
 
 export const CreateReviewResponse = zod.object({
-  "id": zod.number(),
-  "orderId": zod.number(),
-  "customerId": zod.number(),
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "customerId": zod.string(),
   "rating": zod.number().min(1).max(createReviewResponseRatingMax),
   "remark": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -393,7 +393,7 @@ export const GetDashboardSummaryResponse = zod.object({
  * @summary Most recent 10 orders with customer info (admin only)
  */
 export const GetRecentOrdersResponseItem = zod.object({
-  "id": zod.number(),
+  "id": zod.string(),
   "customerName": zod.string(),
   "customerEmail": zod.string().nullish(),
   "totalKes": zod.number(),
@@ -420,7 +420,7 @@ export const GetRevenueTrendResponse = zod.array(GetRevenueTrendResponseItem)
  * @summary Initialize a Paystack payment for an order
  */
 export const InitializePaymentBody = zod.object({
-  "orderId": zod.number()
+  "orderId": zod.string()
 })
 
 export const InitializePaymentResponse = zod.object({
@@ -439,7 +439,7 @@ export const VerifyPaymentBody = zod.object({
 export const VerifyPaymentResponse = zod.object({
   "success": zod.boolean(),
   "status": zod.string(),
-  "orderId": zod.number().nullish()
+  "orderId": zod.string().nullish()
 })
 
 

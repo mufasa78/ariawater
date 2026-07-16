@@ -8,7 +8,7 @@
 import type { AuthUserRole } from './authUserRole';
 
 export interface AuthUser {
-  id: number;
+  id: string;
   name: string;
   email: string;
   /** @nullable */

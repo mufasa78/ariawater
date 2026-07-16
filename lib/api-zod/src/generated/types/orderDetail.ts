@@ -11,8 +11,8 @@ import type { OrderItem } from './orderItem';
 import type { Review } from './review';
 
 export interface OrderDetail {
-  id: number;
-  customerId: number;
+  id: string;
+  customerId: string;
   /** @nullable */
   customerName?: string | null;
   /** @nullable */

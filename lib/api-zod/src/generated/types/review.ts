@@ -7,9 +7,9 @@
  */
 
 export interface Review {
-  id: number;
-  orderId: number;
-  customerId: number;
+  id: string;
+  orderId: string;
+  customerId: string;
   /**
      * @minimum 1
      * @maximum 5

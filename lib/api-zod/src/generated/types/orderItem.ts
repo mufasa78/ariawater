@@ -7,10 +7,10 @@
  */
 
 export interface OrderItem {
-  id: number;
-  productId: number;
-  productName: string;
-  packSize: string;
+  id: string;
+  productId: string;
+  productName?: string;
+  packSize?: string;
   quantity: number;
   unitPriceKes: number;
 }

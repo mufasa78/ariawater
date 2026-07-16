@@ -7,7 +7,7 @@
  */
 
 export interface OrderItemInput {
-  productId: number;
+  productId: string;
   /** @minimum 1 */
   quantity: number;
 }

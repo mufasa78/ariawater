@@ -9,10 +9,10 @@ import paymentsRouter from "./payments";
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(authRouter);
-router.use(productsRouter);
-router.use(ordersRouter);
-router.use(dashboardRouter);
-router.use(paymentsRouter);
+router.use("/auth", authRouter);
+router.use("/products", productsRouter);
+router.use("/orders", ordersRouter);
+router.use("/dashboard", dashboardRouter);
+router.use("/payments", paymentsRouter);
 
 export default router;
