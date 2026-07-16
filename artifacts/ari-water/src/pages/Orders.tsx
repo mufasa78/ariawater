@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useListOrders, useGetOrder, getGetOrderQueryKey, useCreateReview } from '@workspace/api-client-react';
-import { formatKes, formatDate, getStatusColor, getPaymentStatusColor } from '@/lib/utils';
+import { formatKes, formatDate, getStatusColor, getPaymentStatusColor, formatLabel } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -57,7 +57,7 @@ export default function Orders() {
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="font-bold text-lg text-slate-900">Order #{order.id}</h3>
                         <Badge className={`${getStatusColor(order.status)} font-medium px-2.5 py-0.5`} variant="outline">
-                          {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                          {formatLabel(order.status)}
                         </Badge>
                       </div>
                       <p className="text-sm text-slate-500 flex items-center gap-1.5">
@@ -141,11 +141,11 @@ function OrderDetailDialog({ orderId, onClose }: { orderId: string, onClose: () 
                 </div>
                 <div className="text-right">
                   <Badge className={`${getStatusColor(order.status)} font-medium px-3 py-1 mb-2`} variant="outline">
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    {formatLabel(order.status)}
                   </Badge>
                   <div className="flex items-center gap-1.5 text-sm justify-end text-slate-600">
                     <div className={`w-2 h-2 rounded-full ${order.paymentStatus === 'completed' ? 'bg-green-500' : 'bg-amber-500'}`} />
-                    {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                    {formatLabel(order.paymentStatus)}
                   </div>
                 </div>
               </div>
@@ -188,7 +188,7 @@ function OrderDetailDialog({ orderId, onClose }: { orderId: string, onClose: () 
                   <h4 className="flex items-center gap-2 font-medium text-slate-900 mb-2 text-sm">
                     <CreditCard className="h-4 w-4 text-slate-500" /> Payment Info
                   </h4>
-                  <p className="text-slate-600 text-sm capitalize">{order.paymentMethod?.replace('_', ' ') || 'Not specified'}</p>
+                  <p className="text-slate-600 text-sm capitalize">{formatLabel(order.paymentMethod?.replace('_', ' ')) || 'Not specified'}</p>
                   {order.paystackRef && (
                     <p className="text-slate-500 text-xs mt-1 font-mono break-all">Ref: {order.paystackRef}</p>
                   )}

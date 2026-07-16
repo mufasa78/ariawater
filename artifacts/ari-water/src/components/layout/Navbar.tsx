@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuth } from "@/lib/auth-context";
 import { useCart } from "@/lib/cart-context";
+import { getInitials } from "@/lib/utils";
 import {
   ShoppingCart,
   Menu,
@@ -146,7 +147,7 @@ export function Navbar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center justify-center h-9 w-9 rounded-full bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-colors focus:outline-none ring-2 ring-transparent focus:ring-primary/30">
-                  {user.name.charAt(0).toUpperCase()}
+                  {getInitials(user?.name)}
                 </button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
@@ -261,7 +262,7 @@ export function Navbar() {
                 <>
                   <div className="flex items-center gap-4 mb-2">
                     <div className="h-12 w-12 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-lg">
-                      {user.name.charAt(0).toUpperCase()}
+                      {getInitials(user?.name)}
                     </div>
                     <div>
                       <p className="font-medium text-lg">{user.name}</p>

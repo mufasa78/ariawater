@@ -21,6 +21,22 @@ export const formatDate = (dateString: string) => {
   }).format(new Date(dateString));
 };
 
+export const getInitials = (value?: string | null) => {
+  const trimmed = value?.trim();
+  if (!trimmed) return 'A';
+  return trimmed.charAt(0).toUpperCase();
+};
+
+export const formatLabel = (value?: string | null) => {
+  if (!value) return 'Unknown';
+  return value
+    .replace(/_/g, ' ')
+    .split(' ')
+    .filter(Boolean)
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 export const getStatusColor = (status: string) => {
   switch (status) {
     case 'received': return 'bg-blue-100 text-blue-800 border-blue-200';

@@ -5,6 +5,7 @@ import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { LayoutDashboard, Package, ShoppingBag, Droplets, LogOut, Megaphone, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { getInitials } from '@/lib/utils';
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -68,7 +69,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-slate-800 mt-auto">
           <div className="flex items-center gap-3 px-4 py-3 mb-2">
             <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0">
-              {user.name.charAt(0).toUpperCase()}
+              {getInitials(user?.name)}
             </div>
             <div className="min-w-0">
               <p className="text-sm font-medium text-white truncate">{user.name}</p>
