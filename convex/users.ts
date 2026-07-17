@@ -1,0 +1,41 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import { ConvexError } from "convex/values";
+
+export const getByEmail = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    return ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", email))
+      .first();
+  },
+});
+
+export const getById = query({
+  args: { id: v.id("users") },
+  handler: async (ctx, { id }) => {
+    return ctx.db.get(id);
+  },
+});
+
+export const create = mutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    phone: v.optional(v.string()),
+    passwordHash: v.string(),
+    role: v.union(v.literal("admin"), v.literal("customer")),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+    if (existing) {
+      throw new ConvexError("Email already registered");
+    }
+    const id = await ctx.db.insert("users", args);
+    return ctx.db.get(id);
+  },
+});

@@ -5,9 +5,13 @@
     "tsBuildInfoFile": ".tsbuildinfo",
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    "paths": {
+      "../../../../convex/_generated/api": ["./src/stubs/convex-api.ts"]
+    }
   },
   "include": ["src"],
+  "exclude": ["node_modules", "dist"],
   "references": [
     {
       "path": "../../lib/db"

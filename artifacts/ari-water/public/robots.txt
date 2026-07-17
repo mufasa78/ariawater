@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /admin/
+Disallow: /orders
+
+# Sitemaps
+Sitemap: https://ariwater.co.ke/sitemap.xml
+
+# Crawl delay (optional, for polite bots)
+Crawl-delay: 5
