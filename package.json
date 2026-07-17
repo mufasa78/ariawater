@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "preinstall": "node ./scripts/ensure-pnpm.cjs",
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
@@ -13,8 +13,7 @@
     "@replit/connectors-sdk": "^0.4.1"
   },
   "devDependencies": {
-    "convex": "^1.42.2",
-    "prettier": "^3.9.4",
+    "prettier": "^3.9.5",
     "typescript": "~5.9.3"
   }
 }
