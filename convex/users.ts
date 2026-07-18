@@ -46,3 +46,28 @@ export const create = mutation({
     return ctx.db.get(id);
   },
 });
+
+export const update = mutation({
+  args: {
+    id: v.id("users"),
+    name: v.optional(v.string()),
+    email: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    passwordHash: v.optional(v.string()),
+    role: v.optional(
+      v.union(
+        v.literal("admin"),
+        v.literal("marketing"),
+        v.literal("sales"),
+        v.literal("accounting"),
+        v.literal("customer")
+      )
+    ),
+    approved: v.optional(v.boolean()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...patch } = args;
+    await ctx.db.patch(id, patch);
+    return ctx.db.get(id);
+  },
+});

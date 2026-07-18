@@ -161,6 +161,9 @@ importers:
         specifier: ^0.4.1
         version: 0.4.1
     devDependencies:
+      convex:
+        specifier: ^1.42.2
+        version: 1.42.2(react@19.1.0)
       prettier:
         specifier: ^3.9.5
         version: 3.9.5
