@@ -1,11 +1,14 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
+export type Role = "admin" | "marketing" | "sales" | "accounting" | "customer";
+
 export interface JwtPayload {
   userId: string;
-  role: "admin" | "customer";
+  role: Role;
   name: string;
   email: string;
+  approved: boolean;
 }
 
 function getToken(req: Request): string | undefined {
@@ -32,12 +35,28 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+export function requireApproved(req: Request, res: Response, next: NextFunction) {
   requireAuth(req, res, () => {
-    if (req.user?.role !== "admin") {
-      res.status(403).json({ error: "Admin access required" });
+    if (!req.user?.approved) {
+      res.status(403).json({ error: "Account not approved by admin" });
       return;
     }
     next();
   });
+}
+
+export function requireRole(...roles: Role[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    requireApproved(req, res, () => {
+      if (!roles.includes(req.user?.role as Role)) {
+        res.status(403).json({ error: `This action requires one of: ${roles.join(", ")}` });
+        return;
+      }
+      next();
+    });
+  };
+}
+
+export function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  requireRole("admin")(req, res, next);
 }
