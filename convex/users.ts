@@ -25,7 +25,14 @@ export const create = mutation({
     email: v.string(),
     phone: v.optional(v.string()),
     passwordHash: v.string(),
-    role: v.union(v.literal("admin"), v.literal("customer")),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("marketing"),
+      v.literal("sales"),
+      v.literal("accounting"),
+      v.literal("customer")
+    ),
+    approved: v.boolean(),
   },
   handler: async (ctx, args) => {
     const existing = await ctx.db
