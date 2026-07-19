@@ -9,8 +9,8 @@ services:
     region: oregon # or your preferred region
     plan: starter # free tier, upgrade to standard for production
     buildCommand: |
-      pnpm install
-      pnpm run build
+      pnpm install --frozen-lockfile
+      pnpm run typecheck:libs
       pnpm --filter @workspace/api-server run build
     startCommand: |
       cd artifacts/api-server && node dist/index.mjs
@@ -46,8 +46,8 @@ services:
     name: aria-water-frontend
     runtime: static
     buildCommand: |
-      pnpm install
-      pnpm run build
+      pnpm install --frozen-lockfile
+      pnpm run typecheck:libs
       pnpm --filter @workspace/ari-water run build
     staticPublishPath: ./artifacts/ari-water/dist/public
     envVars:

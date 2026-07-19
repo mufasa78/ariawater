@@ -59,7 +59,7 @@ If blueprint doesn't work, create services manually:
    - **Runtime**: Node
    - **Build Command**:
      ```bash
-     pnpm install && pnpm run build && pnpm --filter @workspace/api-server run build
+     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build
      ```
    - **Start Command**:
      ```bash
@@ -80,7 +80,7 @@ If blueprint doesn't work, create services manually:
    - **Branch**: `main`
    - **Build Command**:
      ```bash
-     pnpm install && pnpm run build && pnpm --filter @workspace/ari-water run build
+     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
      ```
    - **Publish Directory**: `artifacts/ari-water/dist/public`
    - **Plan**: Free

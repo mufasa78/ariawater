@@ -28,7 +28,7 @@ Save the deployment URL (e.g., `https://grand-dachshund-295.convex.cloud/`)
    - **Name**: `aria-water-api`
    - **Build Command**: 
      ```
-     pnpm install && pnpm run build
+     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build
      ```
    - **Start Command**:
      ```
@@ -59,7 +59,7 @@ Save the deployment URL (e.g., `https://grand-dachshund-295.convex.cloud/`)
    - **Name**: `aria-water-frontend`
    - **Build Command**:
      ```
-     pnpm install && pnpm run build
+     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
      ```
    - **Publish Directory**: `artifacts/ari-water/dist/public`
 4. Add environment variable:
