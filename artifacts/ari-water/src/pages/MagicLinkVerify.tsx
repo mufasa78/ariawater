@@ -1,15 +1,12 @@
 import { useEffect, useState } from 'react';
-import { useLocation, useNavigate } from 'wouter';
+import { useLocation } from 'wouter';
 import { useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/use-auth';
 
 export function MagicLinkVerify() {
   const [, setLocation] = useLocation();
-  const navigate = useNavigate();
-  const { refetch } = useAuth();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -34,8 +31,6 @@ export function MagicLinkVerify() {
     },
     onSuccess: async () => {
       setStatus('success');
-      // Refresh auth state
-      await refetch();
       // Redirect to home after a short delay
       setTimeout(() => {
         setLocation('/');
@@ -104,7 +99,7 @@ export function MagicLinkVerify() {
 
             <Button
               className="w-full"
-              onClick={() => navigate('/magic-login')}
+              onClick={() => setLocation('/magic-login')}
             >
               Request a new magic link
             </Button>
