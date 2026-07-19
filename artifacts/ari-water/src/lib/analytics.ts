@@ -1,8 +1,8 @@
 // ── Google Analytics 4 integration ──────────────────────────────────────────
 // Set VITE_GA_MEASUREMENT_ID in your environment to activate tracking.
-// e.g. VITE_GA_MEASUREMENT_ID=G-XXXXXXXXXX
+// Analytics cookies are only loaded when the user has given analytics consent.
 
-import { readConsent } from '@/components/layout/CookieConsentBanner';
+import { readConsentPrefs } from '@/components/layout/CookieConsentBanner';
 
 declare global {
   interface Window {
@@ -14,9 +14,14 @@ declare global {
 
 const GA_ID = import.meta.env.VITE_GA_MEASUREMENT_ID as string | undefined;
 
+function analyticsAllowed(): boolean {
+  const prefs = readConsentPrefs();
+  // If no consent recorded yet, treat as declined (privacy-first default)
+  return prefs?.analytics === true;
+}
+
 export function initAnalytics(): void {
-  const consent = readConsent();
-  if (!GA_ID || consent === 'declined') return;
+  if (!GA_ID || !analyticsAllowed()) return;
 
   const script = document.createElement("script");
   script.src = `https://www.googletagmanager.com/gtag/js?id=${GA_ID}`;
@@ -32,7 +37,7 @@ export function initAnalytics(): void {
 }
 
 export function trackPageView(path: string, title?: string): void {
-  if (!window.gtag || !GA_ID || readConsent() === 'declined') return;
+  if (!window.gtag || !GA_ID || !analyticsAllowed()) return;
   window.gtag("event", "page_view", {
     page_path: path,
     page_title: title,
@@ -44,7 +49,7 @@ export function trackEvent(
   name: string,
   params?: Record<string, unknown>,
 ): void {
-  if (!window.gtag || readConsent() === 'declined') return;
+  if (!window.gtag || !analyticsAllowed()) return;
   window.gtag("event", name, params);
 }
 

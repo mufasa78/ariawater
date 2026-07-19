@@ -11,7 +11,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col font-sans">
       <Navbar />
-      <main className="flex-1">
+      {/*
+        pt-24 = 96px clears the floating pill nav (56px pill + 16px top offset + 24px margin).
+        Pages with full-bleed heroes can negate this with -mt-24 on their hero section.
+      */}
+      <main className="flex-1 pt-24">
         {children}
       </main>
       <Footer />
@@ -45,17 +49,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
             <span className="font-display font-bold text-2xl tracking-tight">Ari <span className="text-primary">Admin</span></span>
           </Link>
         </div>
-        
+
         <nav className="flex-1 px-4 py-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => {
             const isActive = location === item.href;
             return (
-              <Link 
-                key={item.href} 
+              <Link
+                key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
-                  isActive 
-                    ? 'bg-primary/20 text-primary font-medium' 
+                  isActive
+                    ? 'bg-primary/20 text-primary font-medium'
                     : 'hover:bg-slate-800 hover:text-white'
                 }`}
               >
@@ -76,7 +80,11 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
               <p className="text-xs text-slate-500 truncate">{user.email}</p>
             </div>
           </div>
-          <Button variant="ghost" className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800" onClick={logout}>
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
+            onClick={logout}
+          >
             <LogOut className="mr-3 h-5 w-5" /> Log out
           </Button>
         </div>

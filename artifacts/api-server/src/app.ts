@@ -53,6 +53,31 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// ── Security headers ─────────────────────────────────────────────────────────
+app.use((_req, res, next) => {
+  // Prevent MIME-type sniffing
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  // Allow same-origin framing only (protects admin/account pages)
+  res.setHeader("X-Frame-Options", "SAMEORIGIN");
+  // Modern referrer policy
+  res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+  // Minimal permissions policy
+  res.setHeader(
+    "Permissions-Policy",
+    "camera=(), microphone=(), payment=(self), geolocation=(self), usb=()",
+  );
+  // HSTS — only over TLS in production
+  if (process.env.NODE_ENV === "production") {
+    res.setHeader(
+      "Strict-Transport-Security",
+      "max-age=31536000; includeSubDomains; preload",
+    );
+  }
+  // Cross-Origin Resource Policy — API responses are only readable by our origin
+  res.setHeader("Cross-Origin-Resource-Policy", "same-site");
+  next();
+});
+
 app.use("/api", router);
 
 export default app;

@@ -39,7 +39,6 @@ function CustomerRoute({ component: Component }: { component: React.ComponentTyp
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
 
-  // Navigate in an effect to avoid setState-during-render warning
   useEffect(() => {
     if (!isLoading && !user) setLocation('/login');
   }, [isLoading, user]);
@@ -108,11 +107,17 @@ function App() {
       <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
         <AuthProvider>
           <CartProvider>
-            <TooltipProvider>
-              <Router />
-              <CookieConsentBanner />
-              <Toaster />
-            </TooltipProvider>
+            {/*
+              CookieConsentBanner wraps the app as a context provider so any
+              component can call useConsent() to check analytics/marketing consent.
+              The visible banner and manage-preferences modal are rendered inside it.
+            */}
+            <CookieConsentBanner>
+              <TooltipProvider>
+                <Router />
+                <Toaster />
+              </TooltipProvider>
+            </CookieConsentBanner>
           </CartProvider>
         </AuthProvider>
       </WouterRouter>
