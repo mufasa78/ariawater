@@ -443,7 +443,8 @@ export const InitializePaymentBody = zod.object({
 
 export const InitializePaymentResponse = zod.object({
   "authorizationUrl": zod.string(),
-  "reference": zod.string()
+  "reference": zod.string(),
+  "message": zod.string().optional()
 })
 
 
@@ -457,7 +458,9 @@ export const VerifyPaymentBody = zod.object({
 export const VerifyPaymentResponse = zod.object({
   "success": zod.boolean(),
   "status": zod.string(),
-  "orderId": zod.string().nullish()
+  "orderId": zod.string().nullish(),
+  "message": zod.string().optional(),
+  "mpesaReceiptNumber": zod.string().optional()
 })
 
 

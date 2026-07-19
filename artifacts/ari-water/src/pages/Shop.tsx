@@ -85,7 +85,7 @@ export default function Shop() {
               setTimeout(() => setLocation('/orders'), 2200);
             } else if (res.status === 'failed') {
               setMpesaStatus('failed');
-              setMpesaMessage(res.message || 'Payment was declined or cancelled.');
+              setMpesaMessage((res as any).message || 'Payment was declined or cancelled.');
               if (pollRef.current) clearInterval(pollRef.current);
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
             }
@@ -169,7 +169,7 @@ export default function Shop() {
                   setMpesaRef(res.reference);
                   setMpesaStatus('pending');
                   setMpesaMessage(
-                    res.message ||
+                    (res as any).message ||
                       'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
                   );
                 },

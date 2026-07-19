@@ -114,11 +114,12 @@ export function CookieConsentBanner({ children }: { children?: React.ReactNode }
     const existing = readConsentPrefs();
     if (existing) {
       setSaved(existing);
-    } else {
-      // Small delay so the page renders first
-      const t = setTimeout(() => setShowBanner(true), 600);
-      return () => clearTimeout(t);
+      return; // Explicit return for consistency
     }
+    
+    // Small delay so the page renders first
+    const t = setTimeout(() => setShowBanner(true), 600);
+    return () => clearTimeout(t);
   }, []);
 
   const acceptAll = () => {
