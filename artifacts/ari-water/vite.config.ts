@@ -50,20 +50,33 @@ export default defineConfig(async ({ mode }) => {
     build: {
       outDir: path.resolve(import.meta.dirname, 'dist/public'),
       emptyOutDir: true,
-      // Optimize for production builds with limited memory
+      // Aggressive optimization for low-memory environments
       rollupOptions: {
         output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react/jsx-runtime'],
-            router: ['wouter'],
-            query: ['@tanstack/react-query'],
+          manualChunks: (id) => {
+            // Split node_modules into smaller chunks
+            if (id.includes('node_modules')) {
+              if (id.includes('react') || id.includes('react-dom')) {
+                return 'react-vendor';
+              }
+              if (id.includes('@tanstack')) {
+                return 'query-vendor';
+              }
+              if (id.includes('lucide')) {
+                return 'icons';
+              }
+              return 'vendor';
+            }
           },
         },
       },
       // Reduce memory usage
       chunkSizeWarningLimit: 1000,
       minify: 'esbuild',
-      sourcemap: false, // Disable sourcemaps in production to save memory
+      sourcemap: false,
+      // Reduce concurrent processing
+      modulePreload: false,
+      cssCodeSplit: true,
     },
     server: {
       port,
