@@ -18,6 +18,9 @@ import Register from '@/pages/Register';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 import CookiePolicy from '@/pages/CookiePolicy';
+import About from '@/pages/About';
+import { MagicLinkLogin } from '@/pages/MagicLinkLogin';
+import { MagicLinkVerify } from '@/pages/MagicLinkVerify';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
@@ -74,10 +77,13 @@ function Router() {
         {/* Public */}
         <Route path="/" component={() => <PublicRoute component={Landing} />} />
         <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
+        <Route path="/about" component={() => <PublicRoute component={About} />} />
 
         {/* Auth */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
         <Route path="/register" component={() => <PublicRoute component={Register} hideLayout />} />
+        <Route path="/magic-login" component={() => <PublicRoute component={MagicLinkLogin} hideLayout />} />
+        <Route path="/magic-verify" component={() => <PublicRoute component={MagicLinkVerify} hideLayout />} />
 
         {/* Policies */}
         <Route path="/privacy" component={() => <PublicRoute component={Privacy} />} />

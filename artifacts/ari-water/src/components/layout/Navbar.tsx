@@ -54,7 +54,7 @@ export function Navbar() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "/shop", label: "Shop Water" },
-    { href: "/#story", label: "About" },
+    { href: "/about", label: "About" },
   ];
 
   if (user?.role === "customer") {

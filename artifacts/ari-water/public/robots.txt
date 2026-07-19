@@ -1,16 +1,15 @@
-# Ari Water — robots.txt
-# https://ariwater.co.ke
-
+# Allow all crawlers
 User-agent: *
 Allow: /
 
-# Private / authenticated areas
+# Disallow admin and authentication pages from search engines
 Disallow: /admin
-Disallow: /admin/
+Disallow: /admin/*
+Disallow: /login
+Disallow: /register
+Disallow: /magic-login
+Disallow: /magic-verify
 Disallow: /orders
 
-# API endpoints — not meant for search indexing
-Disallow: /api/
-
-# Sitemaps
-Sitemap: https://ariwater.co.ke/sitemap.xml
+# Sitemap location
+Sitemap: https://ariawater.vercel.app/sitemap.xml

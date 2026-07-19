@@ -189,8 +189,8 @@ export function Footer() {
             </h3>
             <ul className="space-y-3 text-sm text-slate-400">
               {[
-                { label: "About Ari Water", href: "/#story" },
-                { label: "Quality Standards", href: "/#quality" },
+                { label: "About Ari Water", href: "/about" },
+                { label: "Quality Standards", href: "/about#certifications" },
                 { label: "Delivery Info", href: "/#delivery" },
                 { label: "Contact Us", href: "/#contact" },
                 { label: "Aritwin Limited", href: "/" },
