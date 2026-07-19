@@ -33,7 +33,7 @@ function signToken(payload: {
   return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "7d" });
 }
 
-// POST /api/auth/register - CUSTOMERS ONLY (not approved by default)
+// POST /api/auth/register - CUSTOMERS ONLY (auto-approved for new flow)
 router.post("/register", async (req, res) => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
@@ -52,7 +52,7 @@ router.post("/register", async (req, res) => {
       phone: phone ?? undefined,
       passwordHash,
       role: "customer",
-      approved: false, // Customers start unapproved
+      approved: true, // Auto-approve new registrations (magic link flow recommended)
     }) as typeof user;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

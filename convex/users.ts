@@ -71,3 +71,20 @@ export const update = mutation({
     return ctx.db.get(id);
   },
 });
+
+export const listAll = query({
+  args: {},
+  handler: async (ctx) => {
+    return ctx.db.query("users").collect();
+  },
+});
+
+export const approveUser = mutation({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }) => {
+    await ctx.db.patch(userId, { approved: true });
+    return ctx.db.get(userId);
+  },
+});
