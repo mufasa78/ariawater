@@ -5,9 +5,20 @@
   "type": "module",
   "scripts": {
     "hello": "tsx ./src/hello.ts",
+    "setup-admin": "tsx ./src/setup-admin.ts",
+    "setup-admin-via-api": "tsx ./src/setup-admin-via-api.ts",
+    "hash-password": "tsx ./src/hash-password.ts",
+    "test-login": "tsx ./src/test-login.ts",
+    "test-lipana": "tsx ./src/test-lipana.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "convex": "^1.42.2",
+    "dotenv": "^16.4.5"
+  },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "catalog:",
     "tsx": "catalog:"
   }
