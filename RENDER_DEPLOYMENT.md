@@ -80,12 +80,17 @@ If blueprint doesn't work, create services manually:
    - **Branch**: `main`
    - **Build Command**:
      ```bash
-     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
+     export NODE_OPTIONS="--max-old-space-size=2048" && pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
      ```
    - **Publish Directory**: `artifacts/ari-water/dist/public`
    - **Plan**: Free
 
 4. Add environment variables (see below)
+
+   | Key | Value |
+   |-----|-------|
+   | `NODE_OPTIONS` | `--max-old-space-size=2048` |
+   | `VITE_API_URL` | `https://aria-water-api.onrender.com` |
 
 5. Click **"Create Static Site"**
 
@@ -227,6 +232,19 @@ Try:
 2. Browser console for errors
 3. Verify `VITE_API_URL` is set correctly
 4. Check Network tab for failed API calls
+
+### Issue: Frontend build fails with "JavaScript heap out of memory"
+
+**Cause:** Vite build exceeds available memory (512MB on free tier)
+
+**Solution:**
+1. Add environment variable: `NODE_OPTIONS=--max-old-space-size=2048`
+2. Update build command to include:
+   ```bash
+   export NODE_OPTIONS="--max-old-space-size=2048"
+   ```
+3. Redeploy
+4. If still fails, upgrade to Starter plan (more RAM)
 
 ### Issue: Slow cold starts (Free tier)
 

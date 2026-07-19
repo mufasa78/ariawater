@@ -59,11 +59,12 @@ Save the deployment URL (e.g., `https://grand-dachshund-295.convex.cloud/`)
    - **Name**: `aria-water-frontend`
    - **Build Command**:
      ```
-     pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
+     export NODE_OPTIONS="--max-old-space-size=2048" && pnpm install --frozen-lockfile && pnpm run typecheck:libs && pnpm --filter @workspace/ari-water run build
      ```
    - **Publish Directory**: `artifacts/ari-water/dist/public`
 4. Add environment variable:
    ```
+   NODE_OPTIONS=--max-old-space-size=2048
    VITE_API_URL=https://aria-water-api.onrender.com
    ```
    (Use your actual API URL from step 2)

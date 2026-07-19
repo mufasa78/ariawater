@@ -46,11 +46,14 @@ services:
     name: aria-water-frontend
     runtime: static
     buildCommand: |
+      export NODE_OPTIONS="--max-old-space-size=2048"
       pnpm install --frozen-lockfile
       pnpm run typecheck:libs
       pnpm --filter @workspace/ari-water run build
     staticPublishPath: ./artifacts/ari-water/dist/public
     envVars:
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=2048
       - key: VITE_API_URL
         sync: false # Set to your API URL (e.g., https://aria-water-api.onrender.com)
     routes:

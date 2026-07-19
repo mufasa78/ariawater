@@ -50,6 +50,20 @@ export default defineConfig(async ({ mode }) => {
     build: {
       outDir: path.resolve(import.meta.dirname, 'dist/public'),
       emptyOutDir: true,
+      // Optimize for production builds with limited memory
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            vendor: ['react', 'react-dom', 'react/jsx-runtime'],
+            router: ['wouter'],
+            query: ['@tanstack/react-query'],
+          },
+        },
+      },
+      // Reduce memory usage
+      chunkSizeWarningLimit: 1000,
+      minify: 'esbuild',
+      sourcemap: false, // Disable sourcemaps in production to save memory
     },
     server: {
       port,
