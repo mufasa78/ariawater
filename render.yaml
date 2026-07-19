@@ -1,0 +1,62 @@
+# Render Blueprint for Aria Water Management System
+# https://render.com/docs/blueprint-spec
+
+services:
+  # API Server - Node.js Web Service
+  - type: web
+    name: aria-water-api
+    runtime: node
+    region: oregon # or your preferred region
+    plan: starter # free tier, upgrade to standard for production
+    buildCommand: |
+      pnpm install
+      pnpm run build
+      pnpm --filter @workspace/api-server run build
+    startCommand: |
+      cd artifacts/api-server && node dist/index.mjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: JWT_SECRET
+        sync: false # Set in Render dashboard
+      - key: CONVEX_URL
+        sync: false # Set in Render dashboard
+      - key: CONVEX_DEPLOYMENT_URL
+        sync: false # Set in Render dashboard
+      - key: ALLOWED_ORIGINS
+        sync: false # Set to your frontend URL
+      - key: PAYMENT_PROVIDER
+        value: lipana
+      - key: LIPANA_PUBLISHABLE_KEY
+        sync: false
+      - key: LIPANA_SECRET_KEY
+        sync: false
+      - key: LIPANA_WEBHOOK_SECRET
+        sync: false
+      - key: LIPANA_WEBHOOK_URL
+        sync: false # Set to https://your-api.onrender.com/api/webhooks/lipana
+      - key: FRONTEND_URL
+        sync: false # Set to your frontend URL
+    healthCheckPath: /api/healthz
+
+  # Frontend - Static Site
+  - type: web
+    name: aria-water-frontend
+    runtime: static
+    buildCommand: |
+      pnpm install
+      pnpm run build
+      pnpm --filter @workspace/ari-water run build
+    staticPublishPath: ./artifacts/ari-water/dist/public
+    envVars:
+      - key: VITE_API_URL
+        sync: false # Set to your API URL (e.g., https://aria-water-api.onrender.com)
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: https://aria-water-api.onrender.com/api/:splat
+      - type: rewrite
+        source: /*
+        destination: /index.html
