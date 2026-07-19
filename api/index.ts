@@ -1,8 +1,6 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
 import app from "../artifacts/api-server/src/app";
 
-export default function handler(req: VercelRequest, res: VercelResponse) {
-  // Express app handles the request
-  app.handle(req, res);
-}
+// Export the Express app directly as the Vercel handler
+// Express apps are compatible with Vercel's serverless function signature
+export default app;
 
