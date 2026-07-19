@@ -75,6 +75,11 @@ async function setupAdmin() {
       approved: true,
     });
 
+    if (!admin) {
+      console.error("❌ Failed to create admin user");
+      process.exit(1);
+    }
+
     console.log("✅ Admin user created successfully!");
     console.log(`   ID: ${admin._id}`);
     console.log(`   Email: ${adminEmail}`);

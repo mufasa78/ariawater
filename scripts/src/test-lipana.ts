@@ -119,12 +119,12 @@ async function testLipanaIntegration() {
       body: JSON.stringify(testPayment),
     });
 
-    const data = await response.json();
+    const data = await response.json() as any;
 
     if (response.ok && data.success) {
       console.log("✅ Lipana API connection successful!");
-      console.log(`   Checkout Request ID: ${data.data?.checkout_request_id}`);
-      console.log(`   Message: ${data.data?.customer_message}`);
+      console.log(`   Checkout Request ID: ${data.data?.checkout_request_id || 'N/A'}`);
+      console.log(`   Message: ${data.data?.customer_message || 'N/A'}`);
       console.log();
 
       // Test 4: Status Check
@@ -143,7 +143,7 @@ async function testLipanaIntegration() {
           }
         );
 
-        const statusData = await statusResponse.json();
+        const statusData = await statusResponse.json() as any;
 
         if (statusResponse.ok) {
           console.log("✅ Status check successful!");

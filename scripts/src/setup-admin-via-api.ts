@@ -42,7 +42,7 @@ async function setupAdmin() {
     });
 
     if (loginResponse.ok) {
-      const user = await loginResponse.json();
+      const user = await loginResponse.json() as any;
       console.log("✅ Admin user already exists and can login!");
       console.log(`   ID: ${user.id}`);
       console.log(`   Name: ${user.name}`);
@@ -52,7 +52,7 @@ async function setupAdmin() {
       return;
     }
 
-    const loginError = await loginResponse.json().catch(() => ({ error: "Unknown error" }));
+    const loginError = await loginResponse.json().catch(() => ({ error: "Unknown error" })) as any;
     
     if (loginResponse.status === 403 && loginError.error?.includes("pending admin approval")) {
       console.log("⚠️  Admin account exists but needs approval.");

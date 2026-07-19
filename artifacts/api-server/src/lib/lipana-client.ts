@@ -83,15 +83,15 @@ export class LipanaClient {
       if (!response.ok) {
         return {
           success: false,
-          message: data.message || "Payment initiation failed",
-          error: data.error || "Unknown error",
+          message: (data as any).message || "Payment initiation failed",
+          error: (data as any).error || "Unknown error",
         };
       }
 
       return {
         success: true,
         message: "Payment initiated successfully",
-        data: data.data,
+        data: (data as any).data,
       };
     } catch (error) {
       return {
@@ -124,13 +124,13 @@ export class LipanaClient {
       if (!response.ok) {
         return {
           success: false,
-          error: data.message || "Failed to fetch payment status",
+          error: (data as any).message || "Failed to fetch payment status",
         };
       }
 
       return {
         success: true,
-        data: data.data,
+        data: (data as any).data,
       };
     } catch (error) {
       return {
