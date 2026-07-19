@@ -9,6 +9,7 @@ if (!convexUrl) {
   throw new Error("CONVEX_URL or CONVEX_DEPLOYMENT_URL env var is required");
 }
 
-// Create a fresh client per import — tokens never cached
-export const convex = new ConvexHttpClient(convexUrl);
+// Strip trailing slash — ConvexHttpClient appends /api/query, so a trailing
+// slash would produce //api/query (404).
+export const convex = new ConvexHttpClient(convexUrl.replace(/\/$/, ""));
 export { api };

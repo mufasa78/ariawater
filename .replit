@@ -1,4 +1,4 @@
-modules = ["nodejs-24"]
+modules = ["nodejs-20", "web"]
 
 [deployment]
 router = "application"
@@ -25,3 +25,6 @@ timeoutMs = 20000
 ADMIN_EMAIL = "admin@ariwater.co.ke"
 CONVEX_DEPLOYMENT_URL = "https://grand-dachshund-295.convex.cloud/"
 CONVEX_URL = "https://grand-dachshund-295.convex.cloud/"
+
+[nix]
+channel = "stable-25_05"
