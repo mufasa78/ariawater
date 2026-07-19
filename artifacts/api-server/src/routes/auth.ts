@@ -1,8 +1,8 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import { convex, api } from "../lib/convex-client";
-import { requireAuth, requireRole, type Role } from "../middlewares/auth";
+import { convex, api } from "../lib/convex-client.js";
+import { requireAuth, requireRole, type Role } from "../middlewares/auth.js";
 import {
   RegisterBody,
   LoginBody,

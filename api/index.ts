@@ -1,6 +1,8 @@
-import app from "../artifacts/api-server/src/app";
+import type { VercelRequest, VercelResponse } from "@vercel/node";
 
-// Export the Express app directly as the Vercel handler
-// Express apps are compatible with Vercel's serverless function signature
-export default app;
+// Dynamic import to avoid TypeScript checking the Express app type
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  const { default: app } = await import("../artifacts/api-server/src/app.js");
+  return app(req, res);
+}
 

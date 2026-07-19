@@ -1,4 +1,4 @@
-import { JwtPayload } from "../middlewares/auth";
+import { JwtPayload } from "../middlewares/auth.js";
 
 // Augment Express Request with the JWT payload attached by requireAuth middleware
 declare global {

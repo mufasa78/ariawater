@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { convex, api } from "../lib/convex-client";
-import { requireAdmin } from "../middlewares/auth";
+import { convex, api } from "../lib/convex-client.js";
+import { requireAdmin } from "../middlewares/auth.js";
 import {
   GetDashboardSummaryResponse,
   GetRecentOrdersResponse,

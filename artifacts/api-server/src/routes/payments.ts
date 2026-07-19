@@ -1,13 +1,13 @@
 import { Router } from "express";
-import { convex, api } from "../lib/convex-client";
-import { requireAuth } from "../middlewares/auth";
+import { convex, api } from "../lib/convex-client.js";
+import { requireAuth } from "../middlewares/auth.js";
 import {
   InitializePaymentBody,
   InitializePaymentResponse,
   VerifyPaymentBody,
   VerifyPaymentResponse,
 } from "@workspace/api-zod";
-import { getLipanaClient, LipanaClient } from "../lib/lipana-client";
+import { getLipanaClient, LipanaClient } from "../lib/lipana-client.js";
 
 const router: Router = Router();
 

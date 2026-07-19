@@ -1,7 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
-import { convex, api } from "../lib/convex-client";
-import { requireAdmin } from "../middlewares/auth";
+import { convex, api } from "../lib/convex-client.js";
+import { requireAdmin } from "../middlewares/auth.js";
 
 const router: Router = Router();
 

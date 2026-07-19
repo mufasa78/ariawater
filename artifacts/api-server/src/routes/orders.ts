@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { convex, api } from "../lib/convex-client";
-import { requireAuth, requireAdmin, requireRole } from "../middlewares/auth";
+import { convex, api } from "../lib/convex-client.js";
+import { requireAuth, requireAdmin, requireRole } from "../middlewares/auth.js";
 import {
   ListOrdersQueryParams,
   CreateOrderBody,
