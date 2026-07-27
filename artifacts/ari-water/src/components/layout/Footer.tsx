@@ -7,25 +7,8 @@ import {
   Instagram,
   Facebook,
   MessageCircle,
-  Droplets,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-const WaterDropLogo = () => (
-  <svg
-    width="28"
-    height="28"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="text-primary"
-  >
-    <path
-      d="M12 2.69466C12 2.69466 4.5 9.11728 4.5 15.5C4.5 19.6421 7.85786 23 12 23C16.1421 23 19.5 19.6421 19.5 15.5C19.5 9.11728 12 2.69466 12 2.69466Z"
-      fill="currentColor"
-    />
-  </svg>
-);
 
 /**
  * NairobiSkyline — SVG city silhouette that creates the footer's top edge.
@@ -103,7 +86,7 @@ export function Footer() {
         <div className="border-b border-white/10">
           <div className="container mx-auto px-4 py-12 text-center">
             <div className="flex items-center justify-center gap-3 mb-4">
-              <Droplets className="h-8 w-8 text-primary" />
+              <img src="/ari-water-logo.png" alt="Ari Water" className="h-10 w-auto object-contain brightness-0 invert" />
               <h2 className="font-display text-3xl md:text-4xl font-bold text-white tracking-tight">
                 Pure Water. <span className="text-primary">Pure Living.</span>
               </h2>
@@ -117,7 +100,7 @@ export function Footer() {
           {/* Column 1: Brand */}
           <div className="space-y-5">
             <Link href="/" className="flex items-center gap-3 text-white">
-              <WaterDropLogo />
+              <img src="/ari-water-logo.png" alt="Ari Water" className="h-8 w-auto object-contain brightness-0 invert" />
               <span className="font-display font-bold text-xl tracking-tight">
                 Ari Water
               </span>

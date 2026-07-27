@@ -9,7 +9,6 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Droplets } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -66,9 +65,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl shadow-slate-200/40 border border-slate-100">
         <div className="flex flex-col items-center">
           <Link href="/" className="flex items-center gap-2 mb-6">
-            <div className="bg-primary/10 p-3 rounded-full">
-              <Droplets className="h-8 w-8 text-primary" />
-            </div>
+            <img src="/ari-water-logo.png" alt="Ari Water" className="h-14 w-auto object-contain" />
           </Link>
           <h2 className="text-center text-3xl font-display font-bold text-slate-900 tracking-tight">
             Welcome back to Ari Water
