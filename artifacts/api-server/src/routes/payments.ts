@@ -39,12 +39,19 @@ router.post("/initialize", requireAuth, async (req, res) => {
       const formattedPhone = LipanaClient.formatPhoneNumber(phoneNumber);
       const reference = `ARI-${parsed.data.orderId}-${Date.now()}`;
 
+      // Build webhook callback URL: use explicit env var, else derive from Replit domain
+      const webhookUrl =
+        process.env.LIPANA_WEBHOOK_URL ||
+        (process.env.REPLIT_DEV_DOMAIN
+          ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/payments/webhook/lipana`
+          : undefined);
+
       const paymentResult = await lipana.initiatePayment({
         amount: Math.round(order.totalKes as number),
         phone_number: formattedPhone,
         account_reference: reference,
-        transaction_desc: `Aria Water Order #${parsed.data.orderId}`,
-        callback_url: process.env.LIPANA_WEBHOOK_URL,
+        transaction_desc: `Ari Water Order #${parsed.data.orderId}`,
+        callback_url: webhookUrl,
       });
 
       if (!paymentResult.success || !paymentResult.data) {

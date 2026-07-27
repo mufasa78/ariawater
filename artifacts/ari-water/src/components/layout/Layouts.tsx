@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useAuth } from '@/lib/auth-context';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { LayoutDashboard, Package, ShoppingBag, Droplets, LogOut, Megaphone, Calculator } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Megaphone, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/utils';
 
@@ -45,7 +45,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
       <aside className="w-full md:w-64 bg-slate-900 text-slate-300 flex-shrink-0 md:h-screen md:sticky top-0 flex flex-col shadow-xl z-20">
         <div className="p-6">
           <Link href="/" className="flex items-center gap-2 text-white">
-            <Droplets className="h-8 w-8 text-primary" />
+            <img src="/ari-water-logo.png" alt="Ari Water" className="h-9 w-auto object-contain brightness-0 invert" />
             <span className="font-display font-bold text-2xl tracking-tight">Ari <span className="text-primary">Admin</span></span>
           </Link>
         </div>

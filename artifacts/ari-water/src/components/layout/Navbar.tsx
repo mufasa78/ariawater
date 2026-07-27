@@ -23,20 +23,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const WaterDropLogo = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-    className="text-primary h-5 w-5 shrink-0"
-  >
-    <path
-      d="M12 2.69466C12 2.69466 4.5 9.11728 4.5 15.5C4.5 19.6421 7.85786 23 12 23C16.1421 23 19.5 19.6421 19.5 15.5C19.5 9.11728 12 2.69466 12 2.69466Z"
-      fill="currentColor"
-    />
-  </svg>
+const AriWaterLogo = () => (
+  <img
+    src="/ari-water-logo.png"
+    alt="Ari Water"
+    className="h-8 w-auto object-contain shrink-0"
+  />
 );
 
 export function Navbar() {
@@ -74,7 +66,7 @@ export function Navbar() {
           <div className="bg-background/95 backdrop-blur-xl border border-border/60 shadow-lg shadow-black/5 rounded-2xl h-14 flex items-center justify-between px-4 sm:px-5">
             {/* Logo */}
             <Link href="/" className="flex items-center gap-2 shrink-0">
-              <WaterDropLogo />
+              <AriWaterLogo />
               <span className="font-display font-bold text-lg tracking-tight text-foreground">
                 Ari <span className="text-primary">Water</span>
               </span>
