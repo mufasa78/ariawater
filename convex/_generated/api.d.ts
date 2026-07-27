@@ -10,6 +10,7 @@
 
 import type * as dashboard from "../dashboard.js";
 import type * as files from "../files.js";
+import type * as magicLinks from "../magicLinks.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as reviews from "../reviews.js";
@@ -24,6 +25,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   dashboard: typeof dashboard;
   files: typeof files;
+  magicLinks: typeof magicLinks;
   orders: typeof orders;
   products: typeof products;
   reviews: typeof reviews;

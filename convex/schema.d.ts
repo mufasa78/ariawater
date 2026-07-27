@@ -47,18 +47,22 @@ declare const _default: import("convex/server").SchemaDefinition<{
         by_active: ["isActive", "_creationTime"];
     }, {}, {}>;
     orders: import("convex/server").TableDefinition<import("convex/values").VObject<{
+        customerId?: import("convex/values").GenericId<"users">;
+        customerName?: string;
+        customerEmail?: string;
         notes?: string;
         paymentMethod?: string;
         paystackRef?: string;
         phone: string;
-        customerId: import("convex/values").GenericId<"users">;
         status: "received" | "processing" | "dispatched" | "delivered";
         totalKes: number;
         deliveryAddress: string;
         paymentStatus: "pending" | "completed" | "failed";
         updatedAt: number;
     }, {
-        customerId: import("convex/values").VId<import("convex/values").GenericId<"users">, "required">;
+        customerId: import("convex/values").VId<import("convex/values").GenericId<"users">, "optional">;
+        customerName: import("convex/values").VString<string, "optional">;
+        customerEmail: import("convex/values").VString<string, "optional">;
         status: import("convex/values").VUnion<"received" | "processing" | "dispatched" | "delivered", [import("convex/values").VLiteral<"received", "required">, import("convex/values").VLiteral<"processing", "required">, import("convex/values").VLiteral<"dispatched", "required">, import("convex/values").VLiteral<"delivered", "required">], "required", never>;
         totalKes: import("convex/values").VFloat64<number, "required">;
         deliveryAddress: import("convex/values").VString<string, "required">;
@@ -68,7 +72,7 @@ declare const _default: import("convex/server").SchemaDefinition<{
         paymentStatus: import("convex/values").VUnion<"pending" | "completed" | "failed", [import("convex/values").VLiteral<"pending", "required">, import("convex/values").VLiteral<"completed", "required">, import("convex/values").VLiteral<"failed", "required">], "required", never>;
         paystackRef: import("convex/values").VString<string, "optional">;
         updatedAt: import("convex/values").VFloat64<number, "required">;
-    }, "required", "phone" | "customerId" | "status" | "totalKes" | "deliveryAddress" | "notes" | "paymentMethod" | "paymentStatus" | "paystackRef" | "updatedAt">, {
+    }, "required", "phone" | "customerId" | "customerName" | "customerEmail" | "status" | "totalKes" | "deliveryAddress" | "notes" | "paymentMethod" | "paymentStatus" | "paystackRef" | "updatedAt">, {
         by_customer: ["customerId", "_creationTime"];
         by_status: ["status", "_creationTime"];
         by_paystackRef: ["paystackRef", "_creationTime"];
@@ -100,6 +104,20 @@ declare const _default: import("convex/server").SchemaDefinition<{
         by_order: ["orderId", "_creationTime"];
         by_customer: ["customerId", "_creationTime"];
     }, {}, {}>;
+    magicLinkTokens: import("convex/server").TableDefinition<import("convex/values").VObject<{
+        email: string;
+        token: string;
+        expiresAt: number;
+        used: boolean;
+    }, {
+        email: import("convex/values").VString<string, "required">;
+        token: import("convex/values").VString<string, "required">;
+        expiresAt: import("convex/values").VFloat64<number, "required">;
+        used: import("convex/values").VBoolean<boolean, "required">;
+    }, "required", "email" | "token" | "expiresAt" | "used">, {
+        by_token: ["token", "_creationTime"];
+        by_email: ["email", "_creationTime"];
+        by_expiresAt: ["expiresAt", "_creationTime"];
+    }, {}, {}>;
 }, true>;
 export default _default;
-//# sourceMappingURL=schema.d.ts.map
