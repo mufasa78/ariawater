@@ -13,7 +13,6 @@ import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   ShoppingCart,
   Plus,
@@ -24,8 +23,6 @@ import {
   CheckCircle2,
   Smartphone,
   XCircle,
-  CreditCard,
-  Building2,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +44,7 @@ export default function Shop() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [phone, setPhone] = useState(user?.phone || '');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'card' | 'bank_transfer'>('mpesa');
+  const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
   
   // Guest checkout fields
   const [customerName, setCustomerName] = useState(user?.name || '');
@@ -159,7 +156,7 @@ export default function Shop() {
           deliveryAddress,
           phone,
           notes,
-          paymentMethod,
+          paymentMethod: 'mpesa',
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -170,56 +167,28 @@ export default function Shop() {
         onSuccess: (order) => {
           clearCart();
 
-          if (paymentMethod === 'mpesa') {
-            // Initiate Lipana M-Pesa STK push
-            initPayment.mutate(
-              { data: { orderId: order.id } },
-              {
-                onSuccess: (res) => {
-                  setMpesaRef(res.reference);
-                  setMpesaStatus('pending');
-                  setMpesaMessage(
-                    (res as any).message ||
-                      'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
-                  );
-                },
-                onError: () => {
-                  // Order was placed; payment initiation failed — let them go to orders
-                  toast({
-                    title: 'Order placed!',
-                    description: 'M-Pesa prompt could not be sent. You can complete payment from your orders page.',
-                  });
-                  setLocation('/orders');
-                },
+          // Initiate Lipana M-Pesa STK push
+          initPayment.mutate(
+            { data: { orderId: order.id } },
+            {
+              onSuccess: (res) => {
+                setMpesaRef(res.reference);
+                setMpesaStatus('pending');
+                setMpesaMessage(
+                  (res as any).message ||
+                    'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
+                );
               },
-            );
-          } else if (paymentMethod === 'card') {
-            initPayment.mutate(
-              { data: { orderId: order.id } },
-              {
-                onSuccess: (res) => {
-                  window.location.href = res.authorizationUrl;
-                },
-                onError: () => {
-                  toast({
-                    variant: 'destructive',
-                    title: 'Payment initialisation failed',
-                    description:
-                      'Your order was placed but we could not start the card payment. Check your orders page.',
-                  });
-                  setLocation('/orders');
-                },
+              onError: () => {
+                // Order was placed; payment initiation failed — let them go to orders
+                toast({
+                  title: 'Order placed!',
+                  description: 'M-Pesa prompt could not be sent. You can complete payment from your orders page.',
+                });
+                setLocation('/orders');
               },
-            );
-          } else {
-            // Bank transfer
-            toast({
-              title: 'Order placed!',
-              description:
-                'Please complete your bank transfer and we will process your order once payment is confirmed.',
-            });
-            setLocation('/orders');
-          }
+            },
+          );
         },
         onError: (error: unknown) => {
           const errorMessage =
@@ -485,36 +454,13 @@ export default function Shop() {
                             <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">{!user ? '3' : '2'}</span>
                             Payment Method
                           </h3>
-                          <RadioGroup
-                            value={paymentMethod}
-                            onValueChange={(val: any) => setPaymentMethod(val)}
-                            className="space-y-2"
-                          >
-                            {[
-                              { value: 'mpesa', label: 'M-Pesa (Recommended)', icon: Smartphone, desc: 'STK push to your phone' },
-                              { value: 'card', label: 'Card (Paystack)', icon: CreditCard, desc: 'Visa · Mastercard' },
-                              { value: 'bank_transfer', label: 'Bank Transfer', icon: Building2, desc: 'Manual confirmation' },
-                            ].map((opt) => (
-                              <div
-                                key={opt.value}
-                                className={`flex items-center space-x-3 border p-3.5 rounded-xl cursor-pointer transition-colors ${
-                                  paymentMethod === opt.value
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-slate-200 hover:border-slate-300'
-                                }`}
-                                onClick={() => setPaymentMethod(opt.value as any)}
-                              >
-                                <RadioGroupItem value={opt.value} id={opt.value} />
-                                <opt.icon className={`h-4 w-4 shrink-0 ${paymentMethod === opt.value ? 'text-primary' : 'text-slate-400'}`} />
-                                <div className="flex-1">
-                                  <Label htmlFor={opt.value} className="cursor-pointer font-medium text-sm">
-                                    {opt.label}
-                                  </Label>
-                                  <p className="text-xs text-slate-500">{opt.desc}</p>
-                                </div>
-                              </div>
-                            ))}
-                          </RadioGroup>
+                          <div className="flex items-center space-x-3 border p-3.5 rounded-xl border-primary bg-primary/5">
+                            <Smartphone className="h-4 w-4 shrink-0 text-primary" />
+                            <div className="flex-1">
+                              <p className="font-medium text-sm text-slate-900">M-Pesa</p>
+                              <p className="text-xs text-slate-500">STK push to your phone</p>
+                            </div>
+                          </div>
                         </div>
                       </CardContent>
 

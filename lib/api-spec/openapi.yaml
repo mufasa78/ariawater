@@ -734,7 +734,7 @@ components:
           type: ["string", "null"]
         paymentMethod:
           type: string
-          enum: [mpesa, card, bank_transfer]
+          enum: [mpesa]
         items:
           type: array
           items:

@@ -268,8 +268,6 @@ export type OrderInputPaymentMethod = typeof OrderInputPaymentMethod[keyof typeo
 
 export const OrderInputPaymentMethod = {
   mpesa: 'mpesa',
-  card: 'card',
-  bank_transfer: 'bank_transfer',
 } as const;
 
 export interface OrderInput {

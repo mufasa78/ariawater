@@ -65,7 +65,7 @@ function mapReview(r: Record<string, unknown>) {
   };
 }
 
-// GET /api/orders — customer sees own, admin sees all
+// GET /api/orders — customer sees own, admin sees all (requires auth)
 router.get("/", requireAuth, async (req, res) => {
   const params = ListOrdersQueryParams.safeParse(req.query);
   if (!params.success) {
@@ -85,6 +85,11 @@ router.get("/", requireAuth, async (req, res) => {
       limit: limit ?? 50,
     }) as Record<string, unknown>;
   } else {
+    // Only authenticated customers can list their orders
+    if (!req.user!.userId) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
     result = await convex.query(api.orders.listByCustomer, {
       customerId: req.user!.userId as any,
       page: page ?? 1,
