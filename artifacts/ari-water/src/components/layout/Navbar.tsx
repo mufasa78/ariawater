@@ -153,18 +153,11 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <div className="flex items-center gap-2">
-                  <Link href="/login">
-                    <Button variant="ghost" size="sm" className="font-medium text-sm h-8">
-                      Log in
-                    </Button>
-                  </Link>
-                  <Link href="/shop">
-                    <Button size="sm" className="font-medium text-sm h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-                      Order Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                    </Button>
-                  </Link>
-                </div>
+                <Link href="/shop">
+                  <Button size="sm" className="font-medium text-sm h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+                    Order Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </Link>
               )}
             </div>
 
@@ -251,16 +244,11 @@ export function Navbar() {
                   </Button>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <Link href="/login" className="flex-1">
-                    <Button variant="outline" size="sm" className="w-full">Log in</Button>
-                  </Link>
-                  <Link href="/shop" className="flex-1">
-                    <Button size="sm" className="w-full bg-primary text-primary-foreground">
-                      Order Now
-                    </Button>
-                  </Link>
-                </div>
+                <Link href="/shop" className="flex-1">
+                  <Button size="sm" className="w-full bg-primary text-primary-foreground">
+                    Order Now
+                  </Button>
+                </Link>
               )}
             </div>
           </motion.div>

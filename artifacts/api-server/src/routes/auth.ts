@@ -33,48 +33,12 @@ function signToken(payload: {
   return jwt.sign(payload, process.env.JWT_SECRET!, { expiresIn: "7d" });
 }
 
-// POST /api/auth/register - CUSTOMERS ONLY (auto-approved for new flow)
+// POST /api/auth/register - DISABLED - Customers checkout as guests, only admins can create accounts
 router.post("/register", async (req, res) => {
-  const parsed = RegisterBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { name, email, phone, password } = parsed.data;
-  const passwordHash = await bcrypt.hash(password, 10);
-
-  let user: { _id: string; name: string; email: string; phone?: string; role: Role; approved: boolean } | null;
-  try {
-    user = await convex.mutation(api.users.create, {
-      name,
-      email,
-      phone: phone ?? undefined,
-      passwordHash,
-      role: "customer",
-      approved: true, // Auto-approve new registrations (magic link flow recommended)
-    }) as typeof user;
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("already registered")) {
-      res.status(409).json({ error: "Email already registered" });
-      return;
-    }
-    throw err;
-  }
-
-  res.status(201).json(
-    RegisterResponse.parse({
-      id: user!._id,
-      name,
-      email,
-      phone: phone ?? null,
-      role: "customer",
-    }),
-  );
+  res.status(403).json({ error: "Registration is disabled. Customers can checkout as guests. Only admins can create accounts." });
 });
 
-// POST /api/auth/login - Only approved users can login
+// POST /api/auth/login - Only admins can login
 router.post("/login", async (req, res) => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
@@ -89,6 +53,12 @@ router.post("/login", async (req, res) => {
   } | null;
 
   if (!user) { res.status(401).json({ error: "Invalid email or password" }); return; }
+
+  // Only allow admins to login
+  if (user.role !== "admin") {
+    res.status(403).json({ error: "Only administrators can log in. Customers can checkout as guests." });
+    return;
+  }
 
   if (!user.approved) {
     res.status(403).json({ error: "Account pending admin approval" });
@@ -142,7 +112,12 @@ router.post(
         passwordHash,
         role,
         approved: true, // Admin-created users are auto-approved
-      }) as { _id: string; name: string; email: string; role: Role };
+      }) as { _id: string; name: string; email: string; role: Role } | null;
+
+      if (!user) {
+        res.status(500).json({ error: "Failed to create user" });
+        return;
+      }
 
       res.status(201).json({
         id: user._id,

@@ -48,6 +48,10 @@ export default function Shop() {
   const [phone, setPhone] = useState(user?.phone || '');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'card' | 'bank_transfer'>('mpesa');
+  
+  // Guest checkout fields
+  const [customerName, setCustomerName] = useState(user?.name || '');
+  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
 
   // M-Pesa STK push state
   const [mpesaRef, setMpesaRef] = useState<string | null>(null);
@@ -128,9 +132,13 @@ export default function Shop() {
   };
 
   const handlePlaceOrder = () => {
-    if (!user) {
-      toast({ title: 'Please log in to continue', description: 'You need an account to place an order.' });
-      setLocation('/login');
+    // For guest checkout, require name and email
+    if (!user && (!customerName.trim() || !customerEmail.trim())) {
+      toast({
+        variant: 'destructive',
+        title: 'Missing information',
+        description: 'Please provide your name and email.',
+      });
       return;
     }
 
@@ -146,6 +154,8 @@ export default function Shop() {
     createOrder.mutate(
       {
         data: {
+          customerName: user?.name || customerName,
+          customerEmail: user?.email || customerEmail,
           deliveryAddress,
           phone,
           notes,
@@ -390,14 +400,7 @@ export default function Shop() {
                       <CardFooter className="p-5 pt-0 bg-slate-50">
                         <Button
                           className="w-full h-11 text-base font-semibold"
-                          onClick={() => {
-                            if (!user) {
-                              toast({ title: 'Please log in to continue' });
-                              setLocation('/login');
-                            } else {
-                              setCheckoutStep('details');
-                            }
-                          }}
+                          onClick={() => setCheckoutStep('details')}
                         >
                           Proceed to Checkout <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
@@ -406,10 +409,41 @@ export default function Shop() {
                   ) : (
                     <>
                       <CardContent className="p-5 space-y-5">
+                        {/* Customer Details (for guest checkout) */}
+                        {!user && (
+                          <div className="space-y-3 border-b border-slate-100 pb-5">
+                            <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
+                              <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">1</span>
+                              Your Details
+                            </h3>
+                            <div className="space-y-1">
+                              <Label htmlFor="customerName" className="text-xs">Full Name</Label>
+                              <Input
+                                id="customerName"
+                                placeholder="e.g. John Doe"
+                                value={customerName}
+                                onChange={(e) => setCustomerName(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label htmlFor="customerEmail" className="text-xs">Email Address</Label>
+                              <Input
+                                id="customerEmail"
+                                type="email"
+                                placeholder="e.g. john@example.com"
+                                value={customerEmail}
+                                onChange={(e) => setCustomerEmail(e.target.value)}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                        )}
+
                         {/* Delivery Details */}
-                        <div className="space-y-3 border-b border-slate-100 pb-5">
+                        <div className={`space-y-3 ${!user ? 'border-b border-slate-100 pb-5' : ''}`}>
                           <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
-                            <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">1</span>
+                            <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">{!user ? '2' : '1'}</span>
                             Delivery Details
                           </h3>
                           <div className="space-y-1">
@@ -448,7 +482,7 @@ export default function Shop() {
                         {/* Payment Method */}
                         <div className="space-y-3">
                           <h3 className="font-semibold text-slate-900 flex items-center gap-2 text-sm">
-                            <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">2</span>
+                            <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">{!user ? '3' : '2'}</span>
                             Payment Method
                           </h3>
                           <RadioGroup
@@ -572,13 +606,51 @@ export default function Shop() {
                 <div>
                   <h3 className="text-xl font-bold text-green-700 mb-2">Payment Received!</h3>
                   <p className="text-slate-600 text-sm">
-                    Your order is confirmed. We will begin processing it shortly. Redirecting to your
-                    orders…
+                    Your order is confirmed. We will begin processing it shortly.
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-2 text-sm text-slate-500">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Redirecting…
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={() => {
+                      // Generate and download receipt
+                      const receiptContent = `
+ARI WATER - ORDER RECEIPT
+==========================
+Order ID: ${mpesaRef}
+Date: ${new Date().toLocaleString()}
+Amount: KES ${totalKes.toLocaleString()}
+Payment Method: M-Pesa
+Status: PAID
+
+Customer: ${customerName}
+Email: ${customerEmail}
+Phone: ${phone}
+Delivery Address: ${deliveryAddress}
+${notes ? `Notes: ${notes}` : ''}
+
+Thank you for your order!
+                      `;
+                      const blob = new Blob([receiptContent], { type: 'text/plain' });
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url;
+                      a.download = `ari-water-receipt-${mpesaRef}.txt`;
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    }}
+                    className="w-full"
+                  >
+                    Download Receipt
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setLocation('/orders')}
+                    className="w-full"
+                  >
+                    View Orders
+                  </Button>
                 </div>
               </div>
             )}
