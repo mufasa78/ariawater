@@ -46,15 +46,26 @@ export const listAll = query({
     // Attach customer info
     const enriched = await Promise.all(
       orders.map(async (order) => {
-        const customer = await ctx.db.get(order.customerId);
+        let customerName = order.customerName ?? null;
+        let customerEmail = order.customerEmail ?? null;
+        
+        // If customerId exists, fetch customer details
+        if (order.customerId) {
+          const customer = await ctx.db.get(order.customerId);
+          if (customer) {
+            customerName = customer.name;
+            customerEmail = customer.email;
+          }
+        }
+        
         const items = await ctx.db
           .query("orderItems")
           .withIndex("by_order", (q) => q.eq("orderId", order._id))
           .collect();
         return {
           ...order,
-          customerName: customer?.name ?? null,
-          customerEmail: customer?.email ?? null,
+          customerName,
+          customerEmail,
           itemCount: items.length,
         };
       }),
@@ -70,7 +81,18 @@ export const get = query({
     const order = await ctx.db.get(id);
     if (!order) return null;
 
-    const customer = await ctx.db.get(order.customerId);
+    let customerName = order.customerName ?? null;
+    let customerEmail = order.customerEmail ?? null;
+    
+    // If customerId exists, fetch customer details
+    if (order.customerId) {
+      const customer = await ctx.db.get(order.customerId);
+      if (customer) {
+        customerName = customer.name;
+        customerEmail = customer.email;
+      }
+    }
+
     const items = await ctx.db
       .query("orderItems")
       .withIndex("by_order", (q) => q.eq("orderId", id))
@@ -96,8 +118,8 @@ export const get = query({
 
     return {
       ...order,
-      customerName: customer?.name ?? null,
-      customerEmail: customer?.email ?? null,
+      customerName,
+      customerEmail,
       items: enrichedItems,
       review: review ?? null,
     };

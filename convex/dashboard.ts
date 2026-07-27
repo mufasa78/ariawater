@@ -64,15 +64,26 @@ export const recentOrders = query({
 
     return Promise.all(
       orders.map(async (order) => {
-        const customer = await ctx.db.get(order.customerId);
+        let customerName = order.customerName ?? "Unknown";
+        let customerEmail = order.customerEmail ?? null;
+        
+        // If customerId exists, fetch customer details
+        if (order.customerId) {
+          const customer = await ctx.db.get(order.customerId);
+          if (customer) {
+            customerName = customer.name;
+            customerEmail = customer.email;
+          }
+        }
+        
         const items = await ctx.db
           .query("orderItems")
           .withIndex("by_order", (q) => q.eq("orderId", order._id))
           .collect();
         return {
           id: order._id,
-          customerName: customer?.name ?? "Unknown",
-          customerEmail: customer?.email ?? null,
+          customerName,
+          customerEmail,
           totalKes: order.totalKes,
           status: order.status,
           paymentStatus: order.paymentStatus,

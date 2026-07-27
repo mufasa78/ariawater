@@ -191,12 +191,12 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
     return;
   }
 
-  let order: Record<string, unknown>;
+  let order: Record<string, unknown> | null;
   try {
     order = await convex.mutation(api.orders.updateStatus, {
       id: params.data.id as any,
       status: parsed.data.status,
-    }) as Record<string, unknown>;
+    }) as Record<string, unknown> | null;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("not found")) {
@@ -204,6 +204,11 @@ router.patch("/:id/status", requireAdmin, async (req, res) => {
       return;
     }
     throw err;
+  }
+
+  if (!order) {
+    res.status(404).json({ error: "Order not found" });
+    return;
   }
 
   res.json(UpdateOrderStatusResponse.parse(mapOrder(order)));
@@ -223,14 +228,14 @@ router.post("/:id/review", requireAuth, async (req, res) => {
     return;
   }
 
-  let review: Record<string, unknown>;
+  let review: Record<string, unknown> | null;
   try {
     review = await convex.mutation(api.reviews.create, {
       orderId: params.data.id as any,
       customerId: req.user!.userId as any,
       rating: parsed.data.rating,
       comment: parsed.data.remark ?? undefined,
-    }) as Record<string, unknown>;
+    }) as Record<string, unknown> | null;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
     if (msg.includes("not found")) {
@@ -242,6 +247,11 @@ router.post("/:id/review", requireAuth, async (req, res) => {
       return;
     }
     throw err;
+  }
+
+  if (!review) {
+    res.status(404).json({ error: "Order not found" });
+    return;
   }
 
   res.status(201).json(CreateReviewResponse.parse(mapReview(review)));
