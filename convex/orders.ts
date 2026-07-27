@@ -108,7 +108,9 @@ export const get = query({
 
 export const create = mutation({
   args: {
-    customerId: v.id("users"),
+    customerId: v.optional(v.id("users")), // Optional for guest orders
+    customerName: v.optional(v.string()), // Guest customer name
+    customerEmail: v.optional(v.string()), // Guest customer email
     deliveryAddress: v.string(),
     phone: v.string(),
     notes: v.optional(v.string()),
@@ -120,7 +122,12 @@ export const create = mutation({
       }),
     ),
   },
-  handler: async (ctx, { customerId, deliveryAddress, phone, notes, paymentMethod, items }) => {
+  handler: async (ctx, { customerId, customerName, customerEmail, deliveryAddress, phone, notes, paymentMethod, items }) => {
+    // Validate that either customerId (authenticated) or customerName + customerEmail (guest) is provided
+    if (!customerId && (!customerName || !customerEmail)) {
+      throw new ConvexError("Either customerId (for authenticated users) or customerName + customerEmail (for guests) is required");
+    }
+
     let totalKes = 0;
     const resolvedItems: {
       productId: Id<"products">;
@@ -148,6 +155,8 @@ export const create = mutation({
     const now = Date.now();
     const orderId = await ctx.db.insert("orders", {
       customerId,
+      customerName,
+      customerEmail,
       status: "received",
       totalKes,
       deliveryAddress,

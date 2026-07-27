@@ -104,18 +104,32 @@ router.get("/", requireAuth, async (req, res) => {
   );
 });
 
-// POST /api/orders
-router.post("/", requireAuth, async (req, res) => {
+// POST /api/orders - Support both authenticated and guest checkout
+router.post("/", async (req, res) => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
 
+  // Check if user is authenticated
+  const isAuthenticated = req.user !== undefined;
+  const customerId = isAuthenticated ? req.user!.userId as any : undefined;
+  const customerName = isAuthenticated ? req.user!.name : parsed.data.customerName;
+  const customerEmail = isAuthenticated ? req.user!.email : parsed.data.customerEmail;
+
+  // For guest checkout, require customerName and customerEmail
+  if (!isAuthenticated && (!customerName || !customerEmail)) {
+    res.status(400).json({ error: "customerName and customerEmail are required for guest checkout" });
+    return;
+  }
+
   let order: Record<string, unknown>;
   try {
     order = await convex.mutation(api.orders.create, {
-      customerId: req.user!.userId as any,
+      customerId,
+      customerName,
+      customerEmail,
       deliveryAddress: parsed.data.deliveryAddress,
       phone: parsed.data.phone,
       notes: parsed.data.notes ?? undefined,

@@ -257,6 +257,8 @@ export const ListOrdersResponse = zod.object({
 
 
 export const CreateOrderBody = zod.object({
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
   "deliveryAddress": zod.string(),
   "phone": zod.string(),
   "notes": zod.string().nullish(),

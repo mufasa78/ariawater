@@ -36,7 +36,9 @@ export default defineSchema({
     .index("by_active", ["isActive"]),
 
   orders: defineTable({
-    customerId: v.id("users"),
+    customerId: v.optional(v.id("users")), // Optional for guest orders
+    customerName: v.optional(v.string()), // Guest customer name
+    customerEmail: v.optional(v.string()), // Guest customer email
     status: v.union(
       v.literal("received"),
       v.literal("processing"),

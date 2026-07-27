@@ -14,15 +14,17 @@ const router: Router = Router();
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "paystack"; // lipana | paystack
 
-// POST /api/payments/initialize
-router.post("/initialize", requireAuth, async (req, res) => {
+// POST /api/payments/initialize - Support both authenticated and guest checkout
+router.post("/initialize", async (req, res) => {
   const parsed = InitializePaymentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const isAdmin = req.user!.role === "admin";
+  const isAdmin = req.user?.role === "admin";
   const order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
-  if (!isAdmin && order.customerId !== req.user!.userId) { res.status(403).json({ error: "Access denied" }); return; }
+  
+  // Only check ownership if user is authenticated (not guest)
+  if (req.user && !isAdmin && order.customerId !== req.user.userId){ res.status(403).json({ error: "Access denied" }); return; }
 
   // Lipana M-Pesa Payment
   if (PAYMENT_PROVIDER === "lipana") {
@@ -97,7 +99,7 @@ router.post("/initialize", requireAuth, async (req, res) => {
     method: "POST",
     headers: { Authorization: `Bearer ${PAYSTACK_SECRET}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      email: req.user!.email,
+      email: req.user?.email || (order.customerEmail as string),
       amount: Math.round((order.totalKes as number) * 100),
       reference: `ARI-${parsed.data.orderId}-${Date.now()}`,
       metadata: { orderId: parsed.data.orderId },
@@ -111,13 +113,13 @@ router.post("/initialize", requireAuth, async (req, res) => {
   res.json(InitializePaymentResponse.parse({ authorizationUrl: data.data.authorization_url, reference: data.data.reference }));
 });
 
-// POST /api/payments/verify
-router.post("/verify", requireAuth, async (req, res) => {
+// POST /api/payments/verify - Support both authenticated and guest checkout
+router.post("/verify", async (req, res) => {
   const parsed = VerifyPaymentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
   const { reference } = parsed.data;
-  const isAdmin = req.user!.role === "admin";
+  const isAdmin = req.user?.role === "admin";
 
   // Lipana M-Pesa Verification
   if (PAYMENT_PROVIDER === "lipana") {
@@ -140,7 +142,7 @@ router.post("/verify", requireAuth, async (req, res) => {
 
       const order = await convex.query(api.orders.getByPaystackRef, {
         reference,
-        customerId: isAdmin ? undefined : req.user!.userId as any,
+        customerId: isAdmin ? undefined : (req.user?.userId as any),
       }) as Record<string, unknown> | null;
 
       if (order) {
@@ -173,8 +175,7 @@ router.post("/verify", requireAuth, async (req, res) => {
   if (!PAYSTACK_SECRET) {
     const order = await convex.query(api.orders.getByPaystackRef, {
       reference,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      customerId: isAdmin ? undefined : req.user!.userId as any,
+      customerId: isAdmin ? undefined : (req.user?.userId as any),
     }) as Record<string, unknown> | null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "completed" });
@@ -194,8 +195,7 @@ router.post("/verify", requireAuth, async (req, res) => {
   const payStatus = data.data.status === "success" ? "completed" : "failed";
   const order = await convex.query(api.orders.getByPaystackRef, {
     reference,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    customerId: isAdmin ? undefined : req.user!.userId as any,
+    customerId: isAdmin ? undefined : (req.user?.userId as any),
   }) as Record<string, unknown> | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if (order) await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: payStatus });
