@@ -201,7 +201,10 @@ export function getLipanaClient(): LipanaClient {
       throw new Error("LIPANA_SECRET_KEY environment variable is not set");
     }
 
-    const isProduction = process.env.NODE_ENV === "production";
+    // Use live API when LIPANA_PRODUCTION=true OR when running in production
+    const isProduction =
+      process.env.LIPANA_PRODUCTION === "true" ||
+      process.env.NODE_ENV === "production";
     lipanaClient = new LipanaClient(secretKey, isProduction);
   }
 
