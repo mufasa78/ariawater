@@ -1,6 +1,6 @@
 export declare const listByCustomer: import("convex/server").RegisteredQuery<"public", {
-    page?: number;
     limit?: number;
+    page?: number;
     customerId: import("convex/values").GenericId<"users">;
 }, Promise<{
     orders: {
@@ -25,8 +25,8 @@ export declare const listByCustomer: import("convex/server").RegisteredQuery<"pu
 }>>;
 export declare const listAll: import("convex/server").RegisteredQuery<"public", {
     status?: string;
-    page?: number;
     limit?: number;
+    page?: number;
 }, Promise<{
     orders: {
         customerName: string;
