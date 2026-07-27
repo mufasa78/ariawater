@@ -9,6 +9,10 @@ import type { OrderInputPaymentMethod } from './orderInputPaymentMethod';
 import type { OrderItemInput } from './orderItemInput';
 
 export interface OrderInput {
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerEmail?: string | null;
   deliveryAddress: string;
   phone: string;
   /** @nullable */

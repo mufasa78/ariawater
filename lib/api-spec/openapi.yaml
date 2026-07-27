@@ -722,6 +722,10 @@ components:
       type: object
       required: [deliveryAddress, phone, items]
       properties:
+        customerName:
+          type: ["string", "null"]
+        customerEmail:
+          type: ["string", "null"]
         deliveryAddress:
           type: string
         phone:

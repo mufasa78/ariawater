@@ -273,6 +273,10 @@ export const OrderInputPaymentMethod = {
 } as const;
 
 export interface OrderInput {
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerEmail?: string | null;
   deliveryAddress: string;
   phone: string;
   /** @nullable */
