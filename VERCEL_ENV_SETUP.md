@@ -20,8 +20,8 @@ ADMIN_EMAIL=admin@ariwater.co.ke
 ADMIN_PASSWORD=Admin@123!
 
 # Lipana M-Pesa
-LIPANA_SECRET_KEY=lip_sk_test_180d64eb5eb54d3e2262f6ee990b7108b4dd1d87ab3a0d9bb601eaba7d055db0
-LIPANA_PUBLISHABLE_KEY=lip_pk_test_fa7e40c262551d4723cabebb314ffcaf0b9784d9f72bdce6068bbc6b6bd220ff
+LIPANA_SECRET_KEY=lip_sk_live_...
+LIPANA_PUBLISHABLE_KEY=lip_pk_live_...
 LIPANA_WEBHOOK_SECRET=b5fb48af0cfcd23212ef271e4c8669903063aa28cee0cb56990959bb9414de1c
 LIPANA_WEBHOOK_URL=https://your-vercel-domain.vercel.app/api/payments/webhook/lipana
 

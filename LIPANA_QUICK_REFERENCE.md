@@ -240,8 +240,8 @@ curl -X POST http://localhost:8080/api/payments/verify \
 
 ```env
 # Required
-LIPANA_SECRET_KEY=lip_sk_test_...           # API secret key
-LIPANA_PUBLISHABLE_KEY=lip_pk_test_...      # Public key (for frontend)
+LIPANA_SECRET_KEY=lip_sk_live_...           # API secret key
+LIPANA_PUBLISHABLE_KEY=lip_pk_live_...      # Public key (for frontend)
 LIPANA_WEBHOOK_SECRET=...                   # Webhook verification
 LIPANA_WEBHOOK_URL=https://your-domain.com/api/payments/webhook/lipana
 

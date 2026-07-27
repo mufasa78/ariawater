@@ -35,7 +35,7 @@ Your Aria Water management system is now fully configured and ready for testing 
 **Configuration:**
 ```env
 PAYMENT_PROVIDER=lipana
-LIPANA_SECRET_KEY=lip_sk_test_180d64eb...
+LIPANA_SECRET_KEY=lip_sk_live_...
 ```
 
 **Test Phone:** `254712345678` (sandbox success)

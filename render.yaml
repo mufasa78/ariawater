@@ -30,9 +30,9 @@ services:
       - key: PAYMENT_PROVIDER
         value: lipana
       - key: LIPANA_PUBLISHABLE_KEY
-        sync: false
+        sync: false # Use lip_pk_live_... for production
       - key: LIPANA_SECRET_KEY
-        sync: false
+        sync: false # Use lip_sk_live_... for production
       - key: LIPANA_WEBHOOK_SECRET
         sync: false
       - key: LIPANA_WEBHOOK_URL

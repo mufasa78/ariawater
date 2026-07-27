@@ -110,8 +110,8 @@ Go to API service → Environment → Add Environment Variable:
 | `ALLOWED_ORIGINS` | `https://aria-water-frontend.onrender.com` | ✅ Yes |
 | `FRONTEND_URL` | `https://aria-water-frontend.onrender.com` | ✅ Yes |
 | `PAYMENT_PROVIDER` | `lipana` | ⚠️  Optional |
-| `LIPANA_PUBLISHABLE_KEY` | `lip_pk_test_...` | ⚠️  If using Lipana |
-| `LIPANA_SECRET_KEY` | `lip_sk_test_...` | ⚠️  If using Lipana |
+| `LIPANA_PUBLISHABLE_KEY` | `lip_pk_live_...` | ⚠️  If using Lipana |
+| `LIPANA_SECRET_KEY` | `lip_sk_live_...` | ⚠️  If using Lipana |
 | `LIPANA_WEBHOOK_SECRET` | `b5fb48af0cfcd...` | ⚠️  If using Lipana |
 | `LIPANA_WEBHOOK_URL` | `https://aria-water-api.onrender.com/api/webhooks/lipana` | ⚠️  If using Lipana |
 
