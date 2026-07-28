@@ -63,6 +63,16 @@ router.post("/register", async (req, res) => {
     throw err;
   }
 
+  // Auto-login: sign a JWT and set the session cookie immediately
+  const token = signToken({
+    userId: user!._id,
+    role: "customer",
+    name,
+    email,
+    approved: true,
+  });
+  res.cookie("token", token, COOKIE_OPTIONS);
+
   res.status(201).json(
     RegisterResponse.parse({
       id: user!._id,

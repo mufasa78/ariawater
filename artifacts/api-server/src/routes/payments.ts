@@ -55,10 +55,14 @@ router.post("/initialize", requireAuth, async (req, res) => {
       });
 
       if (!paymentResult.success || !paymentResult.data) {
-        res.status(502).json({ 
-          error: paymentResult.error || "M-Pesa payment initiation failed",
-          message: paymentResult.message 
-        });
+        // Payment provider unreachable or rejected — order is already created.
+        // Return a 200 with a degraded payload so the client can show a "pay later" UX
+        // rather than treating this as a hard error.
+        res.json(InitializePaymentResponse.parse({
+          authorizationUrl: "",
+          reference: reference,
+          message: paymentResult.message || "M-Pesa prompt could not be sent at this time. You can complete payment from your orders page.",
+        }));
         return;
       }
 
