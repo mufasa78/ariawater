@@ -32,4 +32,3 @@ export declare const revenueTrend: import("convex/server").RegisteredQuery<"publ
     orders: number;
     date: string;
 }[]>>;
-//# sourceMappingURL=dashboard.d.ts.map

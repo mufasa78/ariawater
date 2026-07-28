@@ -21,4 +21,3 @@ export declare const getByOrder: import("convex/server").RegisteredQuery<"public
     orderId: import("convex/values").GenericId<"orders">;
     rating: number;
 }>>;
-//# sourceMappingURL=reviews.d.ts.map

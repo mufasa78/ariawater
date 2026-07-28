@@ -57,4 +57,25 @@ export declare const update: import("convex/server").RegisteredMutation<"public"
     role: "admin" | "marketing" | "sales" | "accounting" | "customer";
     approved: boolean;
 }>>;
-//# sourceMappingURL=users.d.ts.map
+export declare const listAll: import("convex/server").RegisteredQuery<"public", {}, Promise<{
+    _id: import("convex/values").GenericId<"users">;
+    _creationTime: number;
+    phone?: string;
+    name: string;
+    email: string;
+    passwordHash: string;
+    role: "admin" | "marketing" | "sales" | "accounting" | "customer";
+    approved: boolean;
+}[]>>;
+export declare const approveUser: import("convex/server").RegisteredMutation<"public", {
+    userId: import("convex/values").GenericId<"users">;
+}, Promise<{
+    _id: import("convex/values").GenericId<"users">;
+    _creationTime: number;
+    phone?: string;
+    name: string;
+    email: string;
+    passwordHash: string;
+    role: "admin" | "marketing" | "sales" | "accounting" | "customer";
+    approved: boolean;
+}>>;

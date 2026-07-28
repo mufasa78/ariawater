@@ -97,4 +97,3 @@ export declare const update: import("convex/server").RegisteredMutation<"public"
 export declare const remove: import("convex/server").RegisteredMutation<"public", {
     id: import("convex/values").GenericId<"products">;
 }, Promise<void>>;
-//# sourceMappingURL=products.d.ts.map

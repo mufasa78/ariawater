@@ -4,4 +4,3 @@ export declare const generateUploadUrl: import("convex/server").RegisteredMutati
 export declare const getStorageUrl: import("convex/server").RegisteredQuery<"public", {
     storageId: string;
 }, Promise<string>>;
-//# sourceMappingURL=files.d.ts.map

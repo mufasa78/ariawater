@@ -100,6 +100,20 @@ declare const _default: import("convex/server").SchemaDefinition<{
         by_order: ["orderId", "_creationTime"];
         by_customer: ["customerId", "_creationTime"];
     }, {}, {}>;
+    magicLinkTokens: import("convex/server").TableDefinition<import("convex/values").VObject<{
+        email: string;
+        token: string;
+        expiresAt: number;
+        used: boolean;
+    }, {
+        email: import("convex/values").VString<string, "required">;
+        token: import("convex/values").VString<string, "required">;
+        expiresAt: import("convex/values").VFloat64<number, "required">;
+        used: import("convex/values").VBoolean<boolean, "required">;
+    }, "required", "email" | "token" | "expiresAt" | "used">, {
+        by_token: ["token", "_creationTime"];
+        by_email: ["email", "_creationTime"];
+        by_expiresAt: ["expiresAt", "_creationTime"];
+    }, {}, {}>;
 }, true>;
 export default _default;
-//# sourceMappingURL=schema.d.ts.map

@@ -55,6 +55,7 @@ export declare const get: import("convex/server").RegisteredQuery<"public", {
     items: {
         productName: string;
         productSku: string;
+        packSize: string;
         imageUrl: string;
         _id: import("convex/values").GenericId<"orderItems">;
         _creationTime: number;
@@ -160,4 +161,3 @@ export declare const getByPaystackRef: import("convex/server").RegisteredQuery<"
     paymentStatus: "pending" | "completed" | "failed";
     updatedAt: number;
 }>>;
-//# sourceMappingURL=orders.d.ts.map
