@@ -48,6 +48,7 @@ function mapOrderItem(i: unknown) {
     productId: item.productId,
     productName: item.productName ?? null,
     productSku: item.productSku ?? null,
+    packSize: item.packSize ?? null,
     imageUrl: item.imageUrl ?? null,
     quantity: item.quantity,
     unitPriceKes: item.unitPriceKes,

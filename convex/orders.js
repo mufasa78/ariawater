@@ -87,6 +87,7 @@ export const get = query({
                 ...item,
                 productName: product?.name ?? null,
                 productSku: product?.sku ?? null,
+                packSize: product?.packSize ?? null,
                 imageUrl: product?.imageUrl ?? null,
             };
         }));

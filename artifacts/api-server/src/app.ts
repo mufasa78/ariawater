@@ -80,4 +80,20 @@ app.use((_req, res, next) => {
 
 app.use("/api", router);
 
+// ── Global error handler — must be last, must have 4 args ────────────────────
+// Catches unhandled errors (e.g. Convex Server Errors) and returns JSON instead
+// of Express's default HTML page.
+app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  const status =
+    typeof err === "object" && err !== null && "status" in err && typeof (err as any).status === "number"
+      ? (err as any).status
+      : 500;
+  const message =
+    err instanceof Error ? err.message : "Internal server error";
+
+  logger.error({ err }, "Unhandled error");
+
+  res.status(status).json({ error: message });
+});
+
 export default app;
