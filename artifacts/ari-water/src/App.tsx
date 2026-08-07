@@ -12,9 +12,15 @@ import { ClerkProvider } from '@clerk/clerk-react';
 import { ClerkAuthWrapper, useAuth } from '@/lib/clerk-auth-wrapper';
 
 // Initialize API client base URL
+// Use relative URL since API is deployed on same domain via Vercel serverless
 const apiUrl = import.meta.env.VITE_API_URL;
 if (apiUrl) {
+  // Only set base URL if explicitly configured (for different domains)
+  // Otherwise, use relative URLs which work on same domain
   setBaseUrl(apiUrl);
+} else {
+  // Default: use same domain (no base URL needed)
+  setBaseUrl('');
 }
 
 // Clerk configuration
