@@ -8,6 +8,13 @@ import { AppLayout, AdminLayout } from '@/components/layout/Layouts';
 import { CookieConsentBanner } from '@/components/layout/CookieConsentBanner';
 import { useEffect } from 'react';
 import { trackPageView } from '@/lib/analytics';
+import { setBaseUrl } from '@workspace/api-client-react';
+
+// Initialize API client base URL
+const apiUrl = import.meta.env.VITE_API_URL;
+if (apiUrl) {
+  setBaseUrl(apiUrl);
+}
 
 // Pages
 import Landing from '@/pages/Landing';
