@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
+import { clerkClient, requireAuth as clerkRequireAuth } from "@clerk/express";
 
 export type Role = "admin" | "marketing" | "sales" | "accounting" | "customer";
 
@@ -11,28 +11,49 @@ export interface JwtPayload {
   approved: boolean;
 }
 
-function getToken(req: Request): string | undefined {
-  // Prefer httpOnly cookie; fall back to Authorization: Bearer <token>
-  const cookie = req.cookies?.token as string | undefined;
-  if (cookie) return cookie;
-  const auth = req.headers.authorization;
-  if (auth?.startsWith("Bearer ")) return auth.slice(7);
-  return undefined;
+// Extend Express Request type to include auth from Clerk
+declare global {
+  namespace Express {
+    interface Request {
+      user?: JwtPayload;
+      auth?: {
+        userId: string;
+        sessionId?: string;
+      };
+    }
+  }
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = getToken(req);
-  if (!token) {
-    res.status(401).json({ error: "Authentication required" });
-    return;
-  }
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    req.user = payload;
-    next();
-  } catch {
-    res.status(401).json({ error: "Invalid or expired token" });
-  }
+  clerkRequireAuth()(req, res, async (err?: any) => {
+    if (err || !req.auth?.userId) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+
+    try {
+      // Get user from Clerk (clerkClient is not a function, it's already the client)
+      const user = await clerkClient.users.getUser(req.auth.userId);
+      
+      // Extract role from publicMetadata (default to "customer")
+      const role = (user.publicMetadata.role as Role) || "customer";
+      const approved = user.publicMetadata.approved !== false; // default to true
+
+      // Set req.user for compatibility with existing code
+      req.user = {
+        userId: user.id,
+        role,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || "User",
+        email: user.emailAddresses[0]?.emailAddress || "",
+        approved,
+      };
+
+      next();
+    } catch (error) {
+      console.error("Error fetching user from Clerk:", error);
+      res.status(500).json({ error: "Failed to authenticate user" });
+    }
+  });
 }
 
 export function requireApproved(req: Request, res: Response, next: NextFunction) {
@@ -63,16 +84,32 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Optional auth middleware - sets req.user if valid token exists, but doesn't require it
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  const token = getToken(req);
-  if (!token) {
+  // Try to authenticate but continue even if it fails
+  clerkRequireAuth()(req, res, async (err?: any) => {
+    if (err || !req.auth?.userId) {
+      // No auth or error - continue without user
+      next();
+      return;
+    }
+
+    try {
+      // Get user from Clerk
+      const user = await clerkClient.users.getUser(req.auth.userId);
+      
+      const role = (user.publicMetadata.role as Role) || "customer";
+      const approved = user.publicMetadata.approved !== false;
+
+      req.user = {
+        userId: user.id,
+        role,
+        name: user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : user.username || "User",
+        email: user.emailAddresses[0]?.emailAddress || "",
+        approved,
+      };
+    } catch {
+      // Error fetching user - continue without user
+    }
+
     next();
-    return;
-  }
-  try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
-    req.user = payload;
-  } catch {
-    // Invalid token - continue without user
-  }
-  next();
+  });
 }

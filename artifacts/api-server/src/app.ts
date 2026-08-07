@@ -2,11 +2,12 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import pinoHttp from "pino-http";
+import { clerkMiddleware } from "@clerk/express";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
-if (!process.env.JWT_SECRET) {
-  throw new Error("JWT_SECRET must be set.");
+if (!process.env.CLERK_SECRET_KEY) {
+  throw new Error("CLERK_SECRET_KEY must be set.");
 }
 
 const convexUrl = process.env.CONVEX_URL ?? process.env.CONVEX_DEPLOYMENT_URL;
@@ -52,6 +53,9 @@ app.use(
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Clerk authentication middleware
+app.use(clerkMiddleware());
 
 // ── Security headers ─────────────────────────────────────────────────────────
 app.use((_req, res, next) => {
