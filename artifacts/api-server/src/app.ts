@@ -82,7 +82,8 @@ app.use((_req, res, next) => {
   next();
 });
 
-app.use("/api", router);
+// Mount routes directly (no /api prefix needed since Vercel routes /api/* here)
+app.use("/", router);
 
 // ── Global error handler — must be last, must have 4 args ────────────────────
 // Catches unhandled errors (e.g. Convex Server Errors) and returns JSON instead
