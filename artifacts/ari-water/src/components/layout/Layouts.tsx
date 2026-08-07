@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { useAuth } from '@/lib/auth-context';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
 import { LayoutDashboard, Package, ShoppingBag, LogOut, Megaphone, Calculator } from 'lucide-react';
@@ -24,10 +24,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 }
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { user, logout } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
   const [location] = useLocation();
 
-  if (!user || user.role !== 'admin') {
+  // Check if user has admin role from publicMetadata
+  const isAdmin = user?.publicMetadata?.role === 'admin';
+
+  if (!user || !isAdmin) {
     return <div className="p-8 text-center">Unauthorized. Redirecting...</div>;
   }
 
@@ -73,17 +77,17 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
         <div className="p-4 border-t border-slate-800 mt-auto">
           <div className="flex items-center gap-3 px-4 py-3 mb-2">
             <div className="h-8 w-8 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold shrink-0">
-              {getInitials(user?.name)}
+              {getInitials(user?.fullName || user?.username || 'User')}
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium text-white truncate">{user.name}</p>
-              <p className="text-xs text-slate-500 truncate">{user.email}</p>
+              <p className="text-sm font-medium text-white truncate">{user.fullName || user.username}</p>
+              <p className="text-xs text-slate-500 truncate">{user.primaryEmailAddress?.emailAddress}</p>
             </div>
           </div>
           <Button
             variant="ghost"
             className="w-full justify-start text-slate-400 hover:text-white hover:bg-slate-800"
-            onClick={logout}
+            onClick={() => signOut()}
           >
             <LogOut className="mr-3 h-5 w-5" /> Log out
           </Button>

@@ -6,7 +6,7 @@ import {
   useVerifyPayment,
 } from '@workspace/api-client-react';
 import { useCart, CartItem } from '@/lib/cart-context';
-import { useAuth } from '@/lib/auth-context';
+import { useUser } from '@clerk/clerk-react';
 import { formatKes } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -48,19 +48,19 @@ export default function Shop() {
   const { data: products, isLoading } = useListProducts({ inStock: 'true' as any });
   const { items, addToCart, removeFromCart, updateQuantity, totalKes, totalItems, clearCart } =
     useCart();
-  const { user } = useAuth();
+  const { user } = useUser();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
 
   const [checkoutStep, setCheckoutStep] = useState<'cart' | 'details'>('cart');
   const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState(user?.primaryPhoneNumber?.phoneNumber || '');
   const [notes, setNotes] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
   
   // Guest checkout fields
-  const [customerName, setCustomerName] = useState(user?.name || '');
-  const [customerEmail, setCustomerEmail] = useState(user?.email || '');
+  const [customerName, setCustomerName] = useState(user?.fullName || '');
+  const [customerEmail, setCustomerEmail] = useState(user?.primaryEmailAddress?.emailAddress || '');
 
   // M-Pesa STK push state
   const [mpesaRef, setMpesaRef] = useState<string | null>(null);
@@ -181,8 +181,8 @@ export default function Shop() {
     createOrder.mutate(
       {
         data: {
-          customerName: user?.name || customerName,
-          customerEmail: user?.email || customerEmail,
+          customerName: user?.fullName || customerName,
+          customerEmail: user?.primaryEmailAddress?.emailAddress || customerEmail,
           deliveryAddress,
           phone,
           notes,
@@ -599,8 +599,8 @@ Amount: KES ${totalKes.toLocaleString()}
 Payment Method: M-Pesa
 Status: PAID
 
-Customer: ${user?.name || customerName}
-Email: ${user?.email || customerEmail}
+Customer: ${user?.fullName || customerName}
+Email: ${user?.primaryEmailAddress?.emailAddress || customerEmail}
 Phone: ${phone}
 Delivery Address: ${deliveryAddress}
 ${notes ? `Notes: ${notes}` : ''}
