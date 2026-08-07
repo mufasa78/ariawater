@@ -84,18 +84,13 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Optional auth middleware - sets req.user if valid token exists, but doesn't require it
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  // Try to authenticate but continue even if it fails
-  clerkRequireAuth()(req, res, async (err?: any) => {
-    if (err || !req.auth?.userId) {
-      // No auth or error - continue without user
-      next();
-      return;
-    }
+  if (!req.auth?.userId) {
+    next();
+    return;
+  }
 
-    try {
-      // Get user from Clerk
-      const user = await clerkClient.users.getUser(req.auth.userId);
-      
+  clerkClient.users.getUser(req.auth.userId)
+    .then((user) => {
       const role = (user.publicMetadata.role as Role) || "customer";
       const approved = user.publicMetadata.approved !== false;
 
@@ -106,10 +101,10 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
         email: user.emailAddresses[0]?.emailAddress || "",
         approved,
       };
-    } catch {
-      // Error fetching user - continue without user
-    }
-
-    next();
-  });
+      next();
+    })
+    .catch((error) => {
+      console.error("Error fetching user from Clerk in optionalAuth:", error);
+      next();
+    });
 }
