@@ -44,7 +44,8 @@ import type {
   RevenuePoint,
   Review,
   ReviewInput,
-  SuccessResponse
+  SuccessResponse,
+  TrackInfoResponse
 } from './api.schemas';
 
 import { customFetch } from '../custom-fetch';
@@ -1191,6 +1192,83 @@ export const useCreateReview = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateReviewMutationOptions(options));
     }
+
+export const getGetTrackInfoUrl = (ticketNumber: string,) => {
+
+
+
+
+  return `/api/tickets/${ticketNumber}/track`
+}
+
+/**
+ * @summary Get tracking info by ticket number
+ */
+export const getTrackInfo = async (ticketNumber: string, options?: RequestInit): Promise<TrackInfoResponse> => {
+
+  return customFetch<TrackInfoResponse>(getGetTrackInfoUrl(ticketNumber),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTrackInfoQueryKey = (ticketNumber: string,) => {
+    return [
+    `/api/tickets/${ticketNumber}/track`
+    ] as const;
+    }
+
+
+export const getGetTrackInfoQueryOptions = <TData = Awaited<ReturnType<typeof getTrackInfo>>, TError = ErrorType<ErrorResponse>>(ticketNumber: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrackInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTrackInfoQueryKey(ticketNumber);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTrackInfo>>> = ({ signal }) => getTrackInfo(ticketNumber, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: ticketNumber !== null && ticketNumber !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTrackInfo>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTrackInfoQueryResult = NonNullable<Awaited<ReturnType<typeof getTrackInfo>>>
+export type GetTrackInfoQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get tracking info by ticket number
+ */
+
+export function useGetTrackInfo<TData = Awaited<ReturnType<typeof getTrackInfo>>, TError = ErrorType<ErrorResponse>>(
+ ticketNumber: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTrackInfo>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTrackInfoQueryOptions(ticketNumber,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetDashboardSummaryUrl = () => {
 

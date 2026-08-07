@@ -34,7 +34,7 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative pt-24 pb-32 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/40 mix-blend-multiply z-10" />
+          <div className="absolute inset-0 bg-linear-to-r from-slate-900/90 to-slate-900/40 mix-blend-multiply z-10" />
           <img
             src="/hero.jpg"
             alt="Ari Water bottles on table"
@@ -49,7 +49,7 @@ export default function Landing() {
             </span>
             <h1 className="text-5xl md:text-7xl font-display font-bold text-white tracking-tight leading-[1.1] mb-6 animate-in slide-in-from-bottom-6 duration-700 delay-150 fill-mode-both">
               Quench your thirst with{" "}
-              <span className="text-primary-foreground text-primary">
+              <span className="text-primary">
                 Ari Water.
               </span>
             </h1>
@@ -65,15 +65,6 @@ export default function Landing() {
                   className="h-14 px-8 text-lg w-full sm:w-auto shadow-xl shadow-primary/30 hover:scale-105 transition-transform"
                 >
                   Order Delivery <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  variant="outline"
-                  className="h-14 px-8 text-lg w-full sm:w-auto bg-white/10 text-white hover:bg-white/20 border-white/20 backdrop-blur-md"
-                >
-                  Create Account
                 </Button>
               </Link>
             </div>
@@ -192,7 +183,7 @@ export default function Landing() {
                   <img
                     src={product.image}
                     alt={product.name}
-                    className="h-full w-full object-contain mix-blend-normal group-hover:scale-105 transition-transform duration-500"
+                    className="h-full w-full object-contain"
                   />
                 </div>
                 <div className="flex justify-between items-start mb-2">
@@ -295,7 +286,7 @@ export default function Landing() {
           <h2 className="text-4xl md:text-5xl font-display font-bold text-white mb-6">
             Ready to taste the difference?
           </h2>
-          <p className="text-xl text-primary-foreground/90 text-white/90 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-white/90 mb-10 max-w-2xl mx-auto">
             Order your first batch of Ari Water today and experience the crisp,
             pure taste of quality hydration.
           </p>

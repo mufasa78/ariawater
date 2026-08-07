@@ -49,3 +49,8 @@ export * from './revenuePoint';
 export * from './review';
 export * from './reviewInput';
 export * from './successResponse';
+export * from './ticket';
+export * from './ticketMessage';
+export * from './ticketMessageSender';
+export * from './ticketStatus';
+export * from './trackInfoResponse';

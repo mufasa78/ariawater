@@ -34,16 +34,20 @@ export default function Login() {
       { data: values },
       {
         onSuccess: (user) => {
+          if (user.role !== 'admin') {
+            toast({
+              variant: 'destructive',
+              title: 'Access denied',
+              description: 'Only administrators can log in. Customers can checkout as guests.',
+            });
+            return;
+          }
           queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
           toast({
             title: 'Welcome back!',
             description: `Successfully logged in as ${user.name}`,
           });
-          if (user.role === 'admin') {
-            setLocation('/admin');
-          } else {
-            setLocation('/shop');
-          }
+          setLocation('/admin');
         },
         onError: (error: unknown) => {
           const errorMessage = typeof error === 'object' && error && 'error' in error && typeof (error as { error?: unknown }).error === 'string'
@@ -68,13 +72,10 @@ export default function Login() {
             <img src="/ari-water-logo.png" alt="Ari Water" className="h-14 w-auto object-contain" />
           </Link>
           <h2 className="text-center text-3xl font-display font-bold text-slate-900 tracking-tight">
-            Welcome back to Ari Water
+            Admin Login
           </h2>
           <p className="mt-2 text-center text-sm text-slate-600">
-            Don't have an account?{' '}
-            <Link href="/register" className="font-medium text-primary hover:text-primary/80 transition-colors">
-              Sign up today
-            </Link>
+            Sign in to access the admin dashboard
           </p>
         </div>
 

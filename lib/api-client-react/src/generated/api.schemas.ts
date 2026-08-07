@@ -195,6 +195,8 @@ export interface Order {
   paymentMethod?: OrderPaymentMethod;
   /** @nullable */
   paystackRef?: string | null;
+  /** @nullable */
+  ticketNumber?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -250,6 +252,8 @@ export interface OrderDetail {
   paymentMethod?: string | null;
   /** @nullable */
   paystackRef?: string | null;
+  /** @nullable */
+  ticketNumber?: string | null;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];
@@ -296,6 +300,43 @@ export const OrderStatusUpdateStatus = {
 
 export interface OrderStatusUpdate {
   status: OrderStatusUpdateStatus;
+}
+
+export type TicketMessageSender = typeof TicketMessageSender[keyof typeof TicketMessageSender];
+
+
+export const TicketMessageSender = {
+  customer: 'customer',
+  support: 'support',
+  system: 'system',
+} as const;
+
+export interface TicketMessage {
+  sender: TicketMessageSender;
+  text: string;
+  timestamp: number;
+}
+
+export type TicketStatus = typeof TicketStatus[keyof typeof TicketStatus];
+
+
+export const TicketStatus = {
+  open: 'open',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export interface Ticket {
+  ticketNumber: string;
+  status: TicketStatus;
+  messages: TicketMessage[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface TrackInfoResponse {
+  ticket: Ticket;
+  order: OrderDetail;
 }
 
 export interface ReviewInput {

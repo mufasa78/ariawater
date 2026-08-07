@@ -28,6 +28,8 @@ export interface OrderDetail {
   paymentMethod?: string | null;
   /** @nullable */
   paystackRef?: string | null;
+  /** @nullable */
+  ticketNumber?: string | null;
   createdAt: Date;
   updatedAt: Date;
   items: OrderItem[];

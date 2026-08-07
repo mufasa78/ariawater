@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { convex, api } from "../lib/convex-client.js";
-import { requireAuth, requireAdmin, requireRole } from "../middlewares/auth.js";
+import { requireAuth, requireAdmin, requireRole, optionalAuth } from "../middlewares/auth.js";
 import {
   ListOrdersQueryParams,
   CreateOrderBody,
@@ -37,6 +37,7 @@ function mapOrder(o: Record<string, unknown>) {
     items: (o.items as unknown[] | undefined)?.map(mapOrderItem) ?? undefined,
     review: (o.review as Record<string, unknown> | null | undefined) ? mapReview(o.review as Record<string, unknown>) : undefined,
     itemCount: o.itemCount,
+    ticketNumber: o.ticketNumber ?? undefined,
   };
 }
 
@@ -111,7 +112,7 @@ router.get("/", requireAuth, async (req, res) => {
 });
 
 // POST /api/orders - Support both authenticated and guest checkout
-router.post("/", async (req, res) => {
+router.post("/", optionalAuth, async (req, res) => {
   const parsed = CreateOrderBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

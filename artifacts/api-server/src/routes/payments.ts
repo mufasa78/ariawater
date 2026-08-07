@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { convex, api } from "../lib/convex-client.js";
-import { requireAuth } from "../middlewares/auth.js";
+import { requireAuth, optionalAuth } from "../middlewares/auth.js";
 import {
   InitializePaymentBody,
   InitializePaymentResponse,
@@ -15,7 +15,7 @@ const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "paystack"; // lipana | paystack
 
 // POST /api/payments/initialize - Support both authenticated and guest checkout
-router.post("/initialize", async (req, res) => {
+router.post("/initialize", optionalAuth, async (req, res) => {
   const parsed = InitializePaymentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
@@ -118,7 +118,7 @@ router.post("/initialize", async (req, res) => {
 });
 
 // POST /api/payments/verify - Support both authenticated and guest checkout
-router.post("/verify", async (req, res) => {
+router.post("/verify", optionalAuth, async (req, res) => {
   const parsed = VerifyPaymentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 

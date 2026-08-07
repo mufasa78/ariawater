@@ -176,6 +176,12 @@ export const create = mutation({
     }
 
     const now = Date.now();
+    
+    // Generate a simple ticket number for tracking
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+    const ticketNumber = `AW-${datePrefix}-${randomSuffix}`;
+    
     const orderId = await ctx.db.insert("orders", {
       customerId,
       customerName,
@@ -187,6 +193,7 @@ export const create = mutation({
       notes,
       paymentMethod,
       paymentStatus: "pending",
+      ticketNumber,
       updatedAt: now,
     });
 
@@ -204,6 +211,21 @@ export const create = mutation({
         });
       }
     }
+
+    await ctx.db.insert("tickets", {
+      orderId,
+      ticketNumber,
+      status: "open",
+      messages: [
+        {
+          sender: "system",
+          text: `Ticket created for order tracking.`,
+          timestamp: now,
+        }
+      ],
+      createdAt: now,
+      updatedAt: now,
+    });
 
     return ctx.db.get(orderId);
   },

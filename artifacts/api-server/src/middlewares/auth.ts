@@ -60,3 +60,19 @@ export function requireRole(...roles: Role[]) {
 export function requireAdmin(req: Request, res: Response, next: NextFunction) {
   requireRole("admin")(req, res, next);
 }
+
+// Optional auth middleware - sets req.user if valid token exists, but doesn't require it
+export function optionalAuth(req: Request, res: Response, next: NextFunction) {
+  const token = getToken(req);
+  if (!token) {
+    next();
+    return;
+  }
+  try {
+    const payload = jwt.verify(token, process.env.JWT_SECRET!) as JwtPayload;
+    req.user = payload;
+  } catch {
+    // Invalid token - continue without user
+  }
+  next();
+}

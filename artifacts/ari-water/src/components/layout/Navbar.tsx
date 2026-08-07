@@ -49,10 +49,6 @@ export function Navbar() {
     { href: "/about", label: "About" },
   ];
 
-  if (user?.role === "customer") {
-    navLinks.push({ href: "/orders", label: "My Orders" });
-  }
-
   const handleLogout = async () => {
     await logout();
     queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
@@ -104,22 +100,7 @@ export function Navbar() {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
-              {user?.role !== "admin" && (
-                <Link
-                  href="/shop"
-                  className="relative text-muted-foreground hover:text-primary transition-colors p-1.5"
-                  aria-label={`Cart (${totalItems} items)`}
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                  {totalItems > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
-                      {totalItems}
-                    </span>
-                  )}
-                </Link>
-              )}
-
-              {user ? (
+              {user?.role === "admin" ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition-colors focus:outline-none ring-2 ring-transparent focus:ring-primary/30">
@@ -131,19 +112,11 @@ export function Navbar() {
                       {user.name}
                     </div>
                     <DropdownMenuSeparator />
-                    {user.role === "admin" ? (
-                      <DropdownMenuItem asChild>
-                        <Link href="/admin" className="w-full cursor-pointer flex items-center">
-                          <Package className="mr-2 h-4 w-4" /> Dashboard
-                        </Link>
-                      </DropdownMenuItem>
-                    ) : (
-                      <DropdownMenuItem asChild>
-                        <Link href="/orders" className="w-full cursor-pointer flex items-center">
-                          <Package className="mr-2 h-4 w-4" /> My Orders
-                        </Link>
-                      </DropdownMenuItem>
-                    )}
+                    <DropdownMenuItem asChild>
+                      <Link href="/admin" className="w-full cursor-pointer flex items-center">
+                        <Package className="mr-2 h-4 w-4" /> Dashboard
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleLogout}
                       className="text-destructive focus:text-destructive cursor-pointer"
@@ -153,11 +126,25 @@ export function Navbar() {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Link href="/shop">
-                  <Button size="sm" className="font-medium text-sm h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
-                    Order Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                <>
+                  <Link
+                    href="/shop"
+                    className="relative text-muted-foreground hover:text-primary transition-colors p-1.5"
+                    aria-label={`Cart (${totalItems} items)`}
+                  >
+                    <ShoppingCart className="h-5 w-5" />
+                    {totalItems > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
+                        {totalItems}
+                      </span>
+                    )}
+                  </Link>
+                  <Link href="/shop">
+                    <Button size="sm" className="font-medium text-sm h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
+                      Order Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                    </Button>
+                  </Link>
+                </>
               )}
             </div>
 
@@ -223,7 +210,7 @@ export function Navbar() {
             </nav>
 
             <div className="border-t border-border mx-4 mb-4 mt-2 pt-4">
-              {user ? (
+              {user?.role === "admin" ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3 px-2">
                     <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0">

@@ -1,0 +1,14 @@
+{
+  "name": "ari-water-api",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node --env-file-if-exists .env.production serverless.mjs"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

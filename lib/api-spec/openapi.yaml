@@ -353,6 +353,32 @@ paths:
               schema:
                 $ref: "#/components/schemas/Review"
 
+  # ── Tickets ───────────────────────────────────────────────────────────────
+  /tickets/{ticketNumber}/track:
+    get:
+      operationId: getTrackInfo
+      tags: [orders]
+      summary: Get tracking info by ticket number
+      parameters:
+        - in: path
+          name: ticketNumber
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackInfoResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   # ── Dashboard (admin) ─────────────────────────────────────────────────────
   /dashboard/summary:
     get:
@@ -653,6 +679,8 @@ components:
           enum: [mpesa, card, bank_transfer, "null"]
         paystackRef:
           type: ["string", "null"]
+        ticketNumber:
+          type: ["string", "null"]
         createdAt:
           type: string
           format: date-time
@@ -689,6 +717,8 @@ components:
         paymentMethod:
           type: ["string", "null"]
         paystackRef:
+          type: ["string", "null"]
+        ticketNumber:
           type: ["string", "null"]
         createdAt:
           type: string
@@ -748,6 +778,45 @@ components:
         status:
           type: string
           enum: [received, processing, dispatched, delivered]
+
+    TicketMessage:
+      type: object
+      required: [sender, text, timestamp]
+      properties:
+        sender:
+          type: string
+          enum: [customer, support, system]
+        text:
+          type: string
+        timestamp:
+          type: number
+
+    Ticket:
+      type: object
+      required: [ticketNumber, status, messages, createdAt, updatedAt]
+      properties:
+        ticketNumber:
+          type: string
+        status:
+          type: string
+          enum: [open, resolved, closed]
+        messages:
+          type: array
+          items:
+            $ref: "#/components/schemas/TicketMessage"
+        createdAt:
+          type: number
+        updatedAt:
+          type: number
+
+    TrackInfoResponse:
+      type: object
+      required: [ticket, order]
+      properties:
+        ticket:
+          $ref: "#/components/schemas/Ticket"
+        order:
+          $ref: "#/components/schemas/OrderDetail"
 
     # Reviews
     Review:

@@ -240,6 +240,7 @@ export const ListOrdersResponse = zod.object({
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
   "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
+  "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })),
@@ -281,6 +282,7 @@ export const CreateOrderResponse = zod.object({
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
   "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
+  "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -310,6 +312,7 @@ export const GetOrderResponse = zod.object({
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
   "paymentMethod": zod.string().nullish(),
   "paystackRef": zod.string().nullish(),
+  "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date(),
   "items": zod.array(zod.object({
@@ -354,6 +357,7 @@ export const UpdateOrderStatusResponse = zod.object({
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
   "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
+  "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
 })
@@ -386,6 +390,65 @@ export const CreateReviewResponse = zod.object({
   "rating": zod.number().min(1).max(createReviewResponseRatingMax),
   "remark": zod.string().nullish(),
   "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get tracking info by ticket number
+ */
+export const GetTrackInfoParams = zod.object({
+  "ticketNumber": zod.coerce.string()
+})
+
+export const getTrackInfoResponseOrderReviewRatingMax = 5;
+
+
+
+export const GetTrackInfoResponse = zod.object({
+  "ticket": zod.object({
+  "ticketNumber": zod.string(),
+  "status": zod.enum(['open', 'resolved', 'closed']),
+  "messages": zod.array(zod.object({
+  "sender": zod.enum(['customer', 'support', 'system']),
+  "text": zod.string(),
+  "timestamp": zod.number()
+})),
+  "createdAt": zod.number(),
+  "updatedAt": zod.number()
+}),
+  "order": zod.object({
+  "id": zod.string(),
+  "customerId": zod.string(),
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "status": zod.enum(['received', 'processing', 'dispatched', 'delivered']),
+  "totalKes": zod.number(),
+  "deliveryAddress": zod.string(),
+  "phone": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
+  "paymentMethod": zod.string().nullish(),
+  "paystackRef": zod.string().nullish(),
+  "ticketNumber": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date(),
+  "items": zod.array(zod.object({
+  "id": zod.string(),
+  "productId": zod.string(),
+  "productName": zod.string().optional(),
+  "packSize": zod.string().optional(),
+  "quantity": zod.number(),
+  "unitPriceKes": zod.number()
+})),
+  "review": zod.object({
+  "id": zod.string(),
+  "orderId": zod.string(),
+  "customerId": zod.string(),
+  "rating": zod.number().min(1).max(getTrackInfoResponseOrderReviewRatingMax),
+  "remark": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+}).optional()
+})
 })
 
 

@@ -12,15 +12,12 @@ import { trackPageView } from '@/lib/analytics';
 // Pages
 import Landing from '@/pages/Landing';
 import Shop from '@/pages/Shop';
-import Orders from '@/pages/Orders';
 import Login from '@/pages/Login';
-import Register from '@/pages/Register';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 import CookiePolicy from '@/pages/CookiePolicy';
 import About from '@/pages/About';
-import { MagicLinkLogin } from '@/pages/MagicLinkLogin';
-import { MagicLinkVerify } from '@/pages/MagicLinkVerify';
+import Track from '@/pages/Track';
 import AdminDashboard from '@/pages/AdminDashboard';
 import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
@@ -38,19 +35,6 @@ function PageTracker() {
 }
 
 // ── Route guards ──────────────────────────────────────────────────────────────
-function CustomerRoute({ component: Component }: { component: React.ComponentType }) {
-  const { user, isLoading } = useAuth();
-  const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && !user) setLocation('/login');
-  }, [isLoading, user]);
-
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  if (!user) return null;
-  return <AppLayout><Component /></AppLayout>;
-}
-
 function AdminRoute({ component: Component }: { component: React.ComponentType }) {
   const { user, isLoading } = useAuth();
   const [, setLocation] = useLocation();
@@ -78,20 +62,15 @@ function Router() {
         <Route path="/" component={() => <PublicRoute component={Landing} />} />
         <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
         <Route path="/about" component={() => <PublicRoute component={About} />} />
+        <Route path="/track" component={() => <PublicRoute component={Track} />} />
 
-        {/* Auth */}
+        {/* Admin Login */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
-        <Route path="/register" component={() => <PublicRoute component={Register} hideLayout />} />
-        <Route path="/magic-login" component={() => <PublicRoute component={MagicLinkLogin} hideLayout />} />
-        <Route path="/magic-verify" component={() => <PublicRoute component={MagicLinkVerify} hideLayout />} />
 
         {/* Policies */}
         <Route path="/privacy" component={() => <PublicRoute component={Privacy} />} />
         <Route path="/terms" component={() => <PublicRoute component={Terms} />} />
         <Route path="/cookie-policy" component={() => <PublicRoute component={CookiePolicy} />} />
-
-        {/* Customer */}
-        <Route path="/orders" component={() => <CustomerRoute component={Orders} />} />
 
         {/* Admin */}
         <Route path="/admin" component={() => <AdminRoute component={AdminDashboard} />} />

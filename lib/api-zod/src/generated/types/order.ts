@@ -25,6 +25,8 @@ export interface Order {
   paymentMethod?: OrderPaymentMethod;
   /** @nullable */
   paystackRef?: string | null;
+  /** @nullable */
+  ticketNumber?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
