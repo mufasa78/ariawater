@@ -5,7 +5,7 @@ import { ConvexError } from "convex/values";
 export const create = mutation({
   args: {
     orderId: v.id("orders"),
-    customerId: v.id("users"),
+    customerId: v.string(), // supports Clerk string IDs as well as old Convex user IDs
     rating: v.number(),
     comment: v.optional(v.string()),
   },

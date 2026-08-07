@@ -36,7 +36,7 @@ export default defineSchema({
     .index("by_active", ["isActive"]),
 
   orders: defineTable({
-    customerId: v.optional(v.id("users")), // Optional for guest orders
+    customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
     customerName: v.optional(v.string()), // Guest customer name
     customerEmail: v.optional(v.string()), // Guest customer email
     status: v.union(
@@ -73,7 +73,7 @@ export default defineSchema({
 
   reviews: defineTable({
     orderId: v.id("orders"),
-    customerId: v.id("users"),
+    customerId: v.string(), // supports Clerk strings and old Convex IDs
     rating: v.number(),
     comment: v.optional(v.string()),
   })

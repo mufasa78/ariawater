@@ -62,6 +62,15 @@ export default function Shop() {
   const [customerName, setCustomerName] = useState(user?.fullName || '');
   const [customerEmail, setCustomerEmail] = useState(user?.primaryEmailAddress?.emailAddress || '');
 
+  // Sync form fields when Clerk user loads
+  useEffect(() => {
+    if (user) {
+      if (!customerName) setCustomerName(user.fullName || '');
+      if (!customerEmail) setCustomerEmail(user.primaryEmailAddress?.emailAddress || '');
+      if (!phone) setPhone(user.primaryPhoneNumber?.phoneNumber || '');
+    }
+  }, [user, customerName, customerEmail, phone]);
+
   // M-Pesa STK push state
   const [mpesaRef, setMpesaRef] = useState<string | null>(null);
   const [mpesaStatus, setMpesaStatus] = useState<MpesaStatus>('idle');
