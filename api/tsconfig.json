@@ -7,13 +7,15 @@
     "lib": ["es2022"],
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,
-    "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "strict": false,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true
   },
-  "include": ["./**/*.ts", "./**/*.js"],
-  "exclude": ["node_modules"]
+  "include": ["*.js", "[...path].js"],
+  "exclude": ["node_modules", "dist"]
 }
