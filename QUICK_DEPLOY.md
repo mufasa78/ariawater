@@ -1,115 +1,159 @@
-# Quick Deploy Guide - Aria Water to Vercel
+# Quick Deployment Guide
 
-## 🚀 Deploy in 3 Steps
+## Pre-Deployment Checklist
 
-### Step 1: Push to GitHub
+✅ All API routes fixed and properly mounted  
+✅ Guest checkout authentication configured  
+✅ M-PESA/Lipana integration ready  
+✅ Convex schema includes all tables  
+✅ API client base URL configuration added  
+
+## Deploy to Production
+
+### 1. Deploy Convex Backend
 ```bash
-git add .
-git commit -m "Ready for production deployment"
-git push origin main
+npx convex deploy --prod
 ```
 
-### Step 2: Import to Vercel
-1. Go to https://vercel.com
-2. Click "Add New..." → "Project"
-3. Import your GitHub repository
-4. Vercel auto-detects settings from `vercel.json`
+### 2. Update Environment Variables
 
-### Step 3: Add Environment Variables
-In Vercel Dashboard → Settings → Environment Variables, add these:
+Set these in your hosting platform (Render, Vercel, etc.):
 
-```
-JWT_SECRET=91ce4ab397e9682f4a4c23ad6ffb5fe2d4218804eae376f3944891768350b532
-CONVEX_URL=https://grand-dachshund-295.convex.cloud/
-CONVEX_DEPLOYMENT_URL=https://grand-dachshund-295.convex.cloud/
-ALLOWED_ORIGINS=https://ariawater.vercel.app
-FRONTEND_URL=https://ariawater.vercel.app
+**API Server:**
+```env
+NODE_ENV=production
+PORT=3000
+CONVEX_URL=<from_convex_dashboard>
+CONVEX_DEPLOY_KEY=<from_convex_dashboard>
+JWT_SECRET=<generate_secure_random_string>
+ADMIN_EMAIL=admin@yourdomain.com
+ADMIN_PASSWORD=<secure_password>
+
+LIPANA_SECRET_KEY=<from_lipana_dashboard>
+LIPANA_PUBLISHABLE_KEY=<from_lipana_dashboard>
+LIPANA_WEBHOOK_SECRET=<from_lipana_dashboard>
+LIPANA_WEBHOOK_URL=https://yourdomain.com/api/payments/webhook/lipana
+LIPANA_PRODUCTION=true
 PAYMENT_PROVIDER=lipana
-LIPANA_PUBLISHABLE_KEY=lip_pk_live_...
-LIPANA_SECRET_KEY=lip_sk_live_...
-LIPANA_WEBHOOK_SECRET=b5fb48af0cfcd23212ef271e4c8669903063aa28cee0cb56990959bb9414de1c
-LIPANA_WEBHOOK_URL=https://ariawater.vercel.app/api/webhooks/lipana
+
+ALLOWED_ORIGINS=https://yourdomain.com
+FRONTEND_URL=https://yourdomain.com
 ```
 
-**Note:** Replace `ariawater.vercel.app` with your actual Vercel domain after first deployment.
+**Frontend:**
+```env
+VITE_API_URL=https://yourdomain.com
+```
 
----
+### 3. Build and Deploy
 
-## ✅ What's Already Configured
+**Option A: Using deploy folder (already built)**
+```bash
+# The deploy folder contains pre-built assets
+# Upload deploy/api/* to your API server
+# Upload deploy/public/* to your static hosting
+```
 
-### Frontend ✅
-- React + TypeScript + Vite
-- All pages created and routed
-- About page with full content
-- Magic link authentication UI
-- Shopping cart & checkout
-- Admin dashboard
-- Responsive design
+**Option B: Build from source**
+```bash
+# Build API
+cd artifacts/api-server
+npm install
+npm run build
 
-### API ✅
-- Express server configured for Vercel serverless
-- All routes with `.js` extensions for ESM
-- Authentication (password + magic link)
-- Payment processing (Lipana/M-Pesa)
-- Order management
-- Product CRUD
-- Admin operations
+# Build Frontend
+cd ../ari-water
+npm install
+npm run build
+```
 
-### Database ✅
-- Convex configured and deployed
-- All schemas defined
-- Magic link tokens table
-- Users, products, orders tables
+### 4. Verify Deployment
 
-### SEO ✅
-- Sitemap.xml created
-- Robots.txt configured
-- Meta tags in pages
-- Open Graph ready
+Test these endpoints:
 
----
+```bash
+# Health check
+curl https://yourdomain.com/api/health
 
-## 🧪 Test After Deployment
+# Products list
+curl https://yourdomain.com/api/products?inStock=true
 
-1. **Homepage:** https://your-app.vercel.app/
-2. **Shop:** https://your-app.vercel.app/shop
-3. **About:** https://your-app.vercel.app/about
-4. **Magic Login:** https://your-app.vercel.app/magic-login
-5. **Admin:** https://your-app.vercel.app/login (admin password)
-6. **Sitemap:** https://your-app.vercel.app/sitemap.xml
-7. **API Health:** https://your-app.vercel.app/api/products
+# Order creation (guest)
+curl -X POST https://yourdomain.com/api/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customerName": "Test User",
+    "customerEmail": "test@example.com",
+    "deliveryAddress": "Test Address",
+    "phone": "0712345678",
+    "paymentMethod": "mpesa",
+    "items": [{"productId": "...", "quantity": 1}]
+  }'
+```
 
----
+### 5. Test M-PESA Integration
 
-## 🔧 Update Domain After First Deploy
+1. Place a test order on the frontend
+2. Verify STK push is received on phone
+3. Complete payment
+4. Check payment status updates correctly
+5. Verify webhook receives callbacks
 
-1. After Vercel assigns your domain (e.g., `aria-water-abc123.vercel.app`)
-2. Update these environment variables:
-   - `ALLOWED_ORIGINS`
-   - `FRONTEND_URL`
-   - `LIPANA_WEBHOOK_URL`
-3. Redeploy
+## Common Issues & Fixes
 
----
+### Issue: 401 on /api/orders
+**Fix:** Ensure `optionalAuth` middleware is applied to POST /api/orders
 
-## 🎯 Features Ready
+### Issue: 500 on /api/orders  
+**Fix:** Check Convex connection and environment variables
 
-✅ Magic link authentication (passwordless for customers)  
-✅ Password authentication (for admin)  
-✅ Shopping cart with M-Pesa payment  
-✅ Order tracking  
-✅ Admin dashboard (products, orders, refunds)  
-✅ About page with company info  
-✅ SEO optimization (sitemap, robots.txt)  
-✅ Mobile responsive  
-✅ Cookie consent (GDPR compliant)  
+### Issue: M-PESA not sending
+**Fix:** 
+- Verify `LIPANA_PRODUCTION=true` for live keys
+- Check phone number format (254XXXXXXXXX)
+- Confirm Lipana credentials are correct
 
----
+### Issue: CORS errors
+**Fix:** Set `ALLOWED_ORIGINS` to include your frontend domain
 
-## 📞 Need Help?
+### Issue: Routes not found
+**Fix:** Ensure app.ts mounts router at `/api` path
 
-Check the full guide: `DEPLOYMENT_STATUS.md`
+## Rollback Plan
 
----
+If deployment fails:
 
-**Ready to deploy!** 🚀
+1. **Revert Convex:**
+   ```bash
+   npx convex rollback
+   ```
+
+2. **Redeploy previous version** from hosting platform dashboard
+
+3. **Check logs** to identify the issue
+
+## Post-Deployment
+
+1. ✅ Test guest checkout flow
+2. ✅ Test authenticated checkout
+3. ✅ Verify M-PESA payments work
+4. ✅ Check admin dashboard loads
+5. ✅ Test order tracking
+6. ✅ Monitor error logs for 24 hours
+
+## Support
+
+- Convex Dashboard: https://dashboard.convex.dev
+- Lipana Dashboard: https://lipana.africa/dashboard
+- GitHub Repo: https://github.com/mufasa78/ariawater
+
+## Next Steps
+
+- [ ] Set up monitoring (e.g., Sentry for error tracking)
+- [ ] Configure automated backups
+- [ ] Set up CI/CD pipeline
+- [ ] Add integration tests
+- [ ] Configure analytics
+- [ ] Set up SSL/TLS certificates
+- [ ] Enable rate limiting
+- [ ] Configure CDN for static assets
