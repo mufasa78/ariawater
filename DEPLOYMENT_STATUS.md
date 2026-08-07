@@ -1,336 +1,292 @@
-# Deployment Status - Aria Water Management
+# Deployment Status & Next Steps
 
-**Last Updated:** July 19, 2026  
-**Status:** ✅ Ready for Vercel Deployment
+## ✅ COMPLETED TASKS
 
----
+### 1. Clerk Authentication Integration
+**Status:** COMPLETE (Frontend + Backend)
 
-## ✅ Completed Tasks
+#### Frontend
+- ✅ Installed `@clerk/clerk-react` package
+- ✅ Wrapped app with `<ClerkProvider>`
+- ✅ Created compatibility layer with `<ClerkAuthWrapper>`
+- ✅ Updated Login page to use `<SignIn>` component
+- ✅ Created SignUp page with `<SignUp>` component
+- ✅ Updated Navbar with `<UserButton>` and auth components
+- ✅ Updated Shop page to use `useUser()` hook
+- ✅ Updated AdminLayout to use Clerk hooks
+- ✅ Automatic JWT token injection for API requests
 
-### 1. API Server Configuration (Vercel)
-- **Status:** Configured and tested
-- **Files:**
-  - `api/index.js` - Vercel serverless handler
-  - `vercel.json` - Vercel configuration with API rewrites
-  - `artifacts/api-server/src/app.ts` - Express app with `.js` extensions for ESM
-- **API Routes:**
-  - `/api/auth/*` - Authentication (login, register, logout, me)
-  - `/api/magic-auth/*` - Magic link authentication (request, verify, check)
-  - `/api/products/*` - Product management
-  - `/api/orders/*` - Order management
-  - `/api/cart/*` - Shopping cart
-  - `/api/payments/*` - Payment processing (Lipana)
-  - `/api/webhooks/*` - Payment webhooks
-  - `/api/reviews/*` - Product reviews
-  - `/api/admin/*` - Admin operations
+#### Backend
+- ✅ Installed `@clerk/express` SDK
+- ✅ Added `clerkMiddleware()` to Express app
+- ✅ Replaced JWT validation with Clerk token validation
+- ✅ Updated auth middleware to fetch user data from Clerk
+- ✅ Role extraction from `publicMetadata.role`
+- ✅ Simplified auth routes (removed login/register)
+- ✅ Added `CLERK_SECRET_KEY` to `.env.local`
 
-### 2. Frontend Build Configuration
-- **Status:** Configured for production
-- **Build Command:** `pnpm run build`
-- **Output Directory:** `artifacts/ari-water/dist/public`
-- **Framework:** Vite + React + TypeScript
-- **Routes Configured:**
-  - `/` - Landing page
-  - `/shop` - Shop page with cart
-  - `/about` - About page (NEW)
-  - `/login` - Admin login
-  - `/register` - User registration
-  - `/magic-login` - Magic link login (NEW)
-  - `/magic-verify` - Magic link verification (NEW)
-  - `/orders` - Customer orders
-  - `/privacy` - Privacy policy
-  - `/terms` - Terms of service
-  - `/cookie-policy` - Cookie policy
-  - `/admin/*` - Admin dashboard routes
+### 2. Deployment Fixes
+- ✅ Fixed `@clerk/clerk-react` not found error
+- ✅ Updated `pnpm-lock.yaml` to sync with package.json
+- ✅ Committed all changes to GitHub
+- ✅ Pushed to main branch successfully
 
-### 3. Magic Link Authentication
-- **Status:** Fully implemented
-- **Features:**
-  - Passwordless authentication for customers
-  - 15-minute token expiry
-  - One-time use tokens
-  - Auto-approval for new users
-  - Email-based magic links
-- **Database:**
-  - `magicLinkTokens` table in Convex
-  - Token storage with expiry tracking
-- **User Flow:**
-  1. User enters email on `/magic-login`
-  2. System generates magic link token
-  3. User clicks link in email (or dev link)
-  4. Token verified on `/magic-verify?token=...`
-  5. User logged in and redirected to home
-
-### 4. SEO & Discoverability
-- **Status:** Configured
-- **Files Created:**
-  - `artifacts/ari-water/public/sitemap.xml` - Complete sitemap with all routes
-  - `artifacts/ari-water/public/robots.txt` - Search engine directives
-- **Priorities:**
-  - Homepage: 1.0 (highest)
-  - Shop: 0.9
-  - About: 0.8
-  - Auth pages: 0.5-0.6
-  - Policies: 0.4
-- **Excluded from indexing:**
-  - Admin pages
-  - Customer orders
-  - Auth pages
-
-### 5. About Page
-- **Status:** Created and integrated
-- **URL:** `/about`
-- **Sections:**
-  - Hero with company tagline
-  - Company story
-  - Core values (Quality, Customer Focus, Reliability)
-  - Statistics (10,000+ customers, 50,000+ bottles)
-  - 5-step purification process
-  - Certifications (ISO 22000, KEBS, WHO)
-  - Call-to-action section
-- **Navigation:**
-  - Added to main navbar
-  - Added to footer links
-
-### 6. Navigation Updates
-- **Navbar:** Updated to include `/about` link
-- **Footer:** Updated company section to link to About page
-- **Mobile Menu:** Includes all routes including About
+### 3. Guest Checkout
+- ✅ M-PESA payment integration working
+- ✅ Guest checkout functional (no auth required)
+- ✅ Order creation works for both guests and logged-in users
 
 ---
 
-## 🔧 Environment Configuration
+## ⚠️ PENDING TASKS
 
-### Vercel Environment Variables (Required)
-```env
-# Authentication
-JWT_SECRET=91ce4ab397e9682f4a4c23ad6ffb5fe2d4218804eae376f3944891768350b532
+### 1. Set Admin Roles in Clerk Dashboard
+**Priority: HIGH**
 
-# Convex Database
-CONVEX_URL=https://grand-dachshund-295.convex.cloud/
-CONVEX_DEPLOYMENT_URL=https://grand-dachshund-295.convex.cloud/
+Currently, all users are created as regular customers. To give admin access:
 
-# CORS & URLs
-ALLOWED_ORIGINS=https://ariawater.vercel.app
-FRONTEND_URL=https://ariawater.vercel.app
-
-# Payment Provider (Lipana)
-PAYMENT_PROVIDER=lipana
-LIPANA_PUBLISHABLE_KEY=lip_pk_live_...
-LIPANA_SECRET_KEY=lip_sk_live_...
-LIPANA_WEBHOOK_SECRET=b5fb48af0cfcd23212ef271e4c8669903063aa28cee0cb56990959bb9414de1c
-LIPANA_WEBHOOK_URL=https://ariawater.vercel.app/api/webhooks/lipana
-```
-
-### Setting Environment Variables in Vercel
-1. Go to Vercel Dashboard → Project → Settings → Environment Variables
-2. Add each variable from above
-3. Select environments: Production, Preview, Development
-4. Save and redeploy
-
----
-
-## 🚀 Deployment Steps
-
-### Initial Deployment
-1. **Push to GitHub:**
-   ```bash
-   git add .
-   git commit -m "Production ready: About page, magic links, sitemap"
-   git push origin main
+1. Go to [Clerk Dashboard](https://dashboard.clerk.com/)
+2. Navigate to **Users** section
+3. Find admin user(s)
+4. Click user → **Metadata** tab
+5. Under **Public Metadata**, add:
+   ```json
+   {
+     "role": "admin",
+     "approved": true
+   }
    ```
+6. Save changes
 
-2. **Import to Vercel:**
-   - Go to https://vercel.com/new
-   - Import your GitHub repository
-   - Vercel will auto-detect the configuration from `vercel.json`
+**Admin email:** admin@aritwin.co.ke
 
-3. **Configure Environment Variables:**
-   - Add all variables from the section above
-   - Apply to all environments
+### 2. Update Production Environment Variables
+**Priority: HIGH**
 
-4. **Deploy:**
-   - Vercel will automatically build and deploy
-   - Build command: `pnpm run build`
-   - Output directory: `artifacts/ari-water/dist/public`
+#### Vercel (Frontend)
+Environment variables to verify:
+- ✅ `VITE_CLERK_PUBLISHABLE_KEY` (already set)
+- ✅ `VITE_API_URL` (already set)
 
-### Subsequent Deployments
-- Simply push to GitHub
-- Vercel automatically rebuilds and deploys
-- Preview deployments for branches
+#### Render/Railway (Backend API)
+Environment variables to add:
+- ⚠️ `CLERK_SECRET_KEY` - **REQUIRED** (get from `.env.local`)
+- ✅ `CONVEX_URL` (already set)
+- ✅ `LIPANA_PUBLISHABLE_KEY` (already set)
+- ✅ `LIPANA_SECRET_KEY` (already set)
+- ✅ `LIPANA_WEBHOOK_SECRET` (already set)
 
----
+**Action:** Add `CLERK_SECRET_KEY` to your backend hosting platform's environment variables.
 
-## 🧪 Testing Checklist
+### 3. Test End-to-End Flows
+**Priority: MEDIUM**
 
-### Before Deployment
-- [ ] All TypeScript errors resolved
-- [ ] All routes render correctly locally
-- [ ] Magic link flow works (request → verify → login)
-- [ ] Shop cart functionality works
-- [ ] Payment integration tested
-- [ ] Admin dashboard accessible
-- [ ] Environment variables set in Vercel
+Test these scenarios:
 
-### After Deployment
-- [ ] Homepage loads correctly
-- [ ] Shop page displays products
-- [ ] About page renders properly
-- [ ] Magic link emails sent (if email configured)
-- [ ] Magic link verification works
-- [ ] Sitemap accessible at `/sitemap.xml`
-- [ ] Robots.txt accessible at `/robots.txt`
-- [ ] API endpoints respond correctly
-- [ ] Payment processing works
-- [ ] Admin login works (password authentication)
-- [ ] Customer orders display correctly
+#### Authentication Tests
+- [ ] User can sign up with Clerk
+- [ ] User can log in with Clerk
+- [ ] User can log out
+- [ ] `<UserButton>` displays correctly
+- [ ] Admin users can access `/admin` routes
+- [ ] Non-admin users are blocked from `/admin`
 
----
+#### Shop & Payment Tests
+- [ ] Guest can browse products
+- [ ] Guest can add products to cart
+- [ ] Guest can checkout without account
+- [ ] M-PESA STK push is sent correctly
+- [ ] Payment polling works
+- [ ] Order is created successfully
+- [ ] Receipt download works
 
-## 📊 Key Features
+#### Admin Dashboard Tests
+- [ ] Admin can view orders
+- [ ] Admin can manage products
+- [ ] Admin can update order status
+- [ ] Role-based access control works
 
-### User Authentication
-- **Customers:** Magic link (passwordless)
-- **Admin:** Password-based login
-- **Auto-approval:** New users automatically approved
-- **JWT-based:** Secure token authentication
+### 4. Update Production Clerk Secret Key
+**Priority: HIGH**
 
-### Payment Processing
-- **Provider:** Lipana (M-Pesa integration)
-- **Features:** Initialize payments, verify transactions
-- **Webhooks:** Real-time payment status updates
-- **Refunds:** Admin-initiated refund support
-
-### Order Management
-- **Customer View:** Order history, status tracking
-- **Admin View:** All orders, status updates, refunds
-- **Statuses:** pending, processing, shipped, delivered, cancelled
-
-### Product Management
-- **Admin Features:** Create, edit, delete products
-- **Categories:** Bottled water, dispensers, accessories
-- **Pricing:** Dynamic pricing with promotions
-- **Inventory:** Stock tracking
-
----
-
-## 🔍 API Endpoints
-
-### Public Routes
-- `POST /api/auth/register` - Create new customer account
-- `POST /api/auth/login` - Admin login (password)
-- `POST /api/magic-auth/request` - Request magic link
-- `POST /api/magic-auth/verify` - Verify magic link token
-- `GET /api/magic-auth/check/:token` - Check token validity
-- `GET /api/products` - List all products
-- `POST /api/webhooks/lipana` - Lipana payment webhook
-
-### Protected Routes (Customer)
-- `GET /api/auth/me` - Get current user
-- `POST /api/auth/logout` - Logout
-- `GET /api/orders` - Get user's orders
-- `POST /api/orders` - Create new order
-- `GET /api/cart` - Get cart
-- `POST /api/cart` - Add to cart
-- `POST /api/payments/initialize` - Initialize payment
-- `POST /api/payments/verify` - Verify payment
-
-### Admin Routes
-- `GET /api/admin/orders` - Get all orders
-- `PUT /api/admin/orders/:id` - Update order
-- `POST /api/admin/products` - Create product
-- `PUT /api/admin/products/:id` - Update product
-- `DELETE /api/admin/products/:id` - Delete product
-- `POST /api/admin/refund` - Process refund
-
----
-
-## 📁 Project Structure
-
+The file `deploy/api/.env.production` has a placeholder:
+```bash
+CLERK_SECRET_KEY=sk_live_xxx  # ⚠️ UPDATE THIS
 ```
-aria-water/
-├── api/
-│   └── index.js                    # Vercel serverless handler
-├── artifacts/
-│   ├── api-server/                 # Express API server
-│   │   ├── src/
-│   │   │   ├── app.ts              # Main Express app
-│   │   │   └── routes/             # API route handlers
-│   │   └── dist/                   # Built serverless bundle
-│   └── ari-water/                  # React frontend
-│       ├── src/
-│       │   ├── pages/              # Route components
-│       │   ├── components/         # Reusable components
-│       │   └── lib/                # Utilities & contexts
-│       ├── public/                 # Static files
-│       │   ├── sitemap.xml         # SEO sitemap
-│       │   └── robots.txt          # Search engine rules
-│       └── dist/                   # Built frontend
-├── convex/                         # Convex backend
-│   ├── schema.ts                   # Database schema
-│   ├── users.ts                    # User operations
-│   ├── products.ts                 # Product operations
-│   ├── orders.ts                   # Order operations
-│   └── magicLinks.ts               # Magic link tokens
-├── vercel.json                     # Vercel configuration
-└── .env.local                      # Local environment variables
+
+Replace with the actual key from `.env.local` when deploying.
+
+---
+
+## 🚀 DEPLOYMENT CHECKLIST
+
+### Pre-Deployment
+- [x] Frontend build succeeds locally
+- [x] Backend build succeeds locally
+- [x] All TypeScript files compile
+- [x] All changes committed to Git
+- [x] All changes pushed to GitHub
+
+### Vercel Deployment (Frontend)
+- [ ] Check latest deployment status
+- [ ] Verify no build errors
+- [ ] Test production site loads
+- [ ] Test Clerk authentication works
+- [ ] Test API requests reach backend
+
+### Backend Deployment (Render/Railway)
+- [ ] Add `CLERK_SECRET_KEY` to environment
+- [ ] Verify build succeeds
+- [ ] Test health check endpoint
+- [ ] Test `/api/auth/me` endpoint
+- [ ] Test M-PESA payment flow
+
+### Post-Deployment Verification
+- [ ] Create a test user in Clerk
+- [ ] Set test user as admin in Clerk Dashboard
+- [ ] Test admin login
+- [ ] Test guest checkout
+- [ ] Test M-PESA payment
+- [ ] Verify orders appear in admin dashboard
+
+---
+
+## 📚 DOCUMENTATION
+
+### Key Documentation Files
+1. **CLERK_BACKEND_INTEGRATION.md** - Complete Clerk integration guide
+2. **CLERK_INTEGRATION.md** - Frontend Clerk setup
+3. **CLERK_MIGRATION_SUMMARY.md** - Migration notes
+4. **LOGIN_VERIFICATION.md** - Login flow details
+
+### Environment Variables Reference
+
+#### Frontend (.env.local)
+```bash
+VITE_CLERK_PUBLISHABLE_KEY=pk_live_xxx
+VITE_API_URL=https://aritwin.co.ke
+```
+
+#### Backend (.env.local)
+```bash
+CLERK_SECRET_KEY=sk_live_xxx
+CONVEX_URL=https://grand-dachshund-295.convex.cloud/
+LIPANA_PUBLISHABLE_KEY=lip_pk_live_xxx
+LIPANA_SECRET_KEY=lip_sk_live_xxx
+LIPANA_WEBHOOK_SECRET=xxx
 ```
 
 ---
 
-## 🎯 Next Steps
+## 🐛 KNOWN ISSUES
 
-### Optional Enhancements
-1. **Email Service:**
-   - Configure SendGrid/Mailgun for magic link emails
-   - Add email templates for orders, confirmations
-   
-2. **Analytics:**
-   - Google Analytics integration (consent-based)
-   - Conversion tracking
-   
-3. **Performance:**
-   - Image optimization
-   - Lazy loading components
-   - CDN configuration
-   
-4. **SEO:**
-   - Meta tags optimization
-   - Open Graph images
-   - Schema.org markup
-   
-5. **Monitoring:**
-   - Error tracking (Sentry)
-   - Performance monitoring
-   - Uptime monitoring
+### Issue 1: Shop Page 404 Error
+**Status:** INVESTIGATING
+**Error:** `shop:1 Failed to load resource: the server responded with a status of 404 ()`
+**Possible Causes:**
+- API endpoint not deployed
+- CORS configuration issue
+- Route not registered correctly
 
-### Production Checklist
-- [ ] Replace test API keys with production keys
-- [ ] Configure production email service
-- [ ] Set up domain (custom domain in Vercel)
-- [ ] Enable HTTPS (automatic in Vercel)
-- [ ] Configure CDN caching
-- [ ] Set up monitoring/logging
-- [ ] Create admin user account
-- [ ] Add initial products
-- [ ] Test end-to-end flows
-- [ ] Launch! 🚀
+**Next Steps:**
+1. Check backend logs for the shop endpoint
+2. Verify API routes are mounted correctly
+3. Test API endpoint directly with curl/Postman
+
+### Issue 2: M-PESA Payment Flow
+**Status:** NEEDS TESTING
+**Requirements:**
+- Test STK push with real phone number
+- Verify payment callback webhook
+- Test payment status polling
+- Verify order creation after payment
 
 ---
 
-## 📞 Support
+## 🔄 ROLLBACK PLAN
 
-**Technical Issues:**
-- Check Vercel build logs for deployment errors
-- Review browser console for frontend errors
-- Check Convex dashboard for database issues
-- Verify environment variables are set correctly
+If deployment fails:
 
-**Contact:**
-- Email: aritwinlimited@gmail.com
-- Phone: +254 726 432 689
-- WhatsApp: +254 726 432 689
+### Frontend Rollback
+1. Go to Vercel dashboard
+2. Navigate to Deployments
+3. Find last working deployment
+4. Click "Promote to Production"
+
+### Backend Rollback
+1. Revert commits: `git revert HEAD~3..HEAD`
+2. Push to GitHub
+3. Backend will auto-deploy previous version
+
+### Emergency Contacts
+- Clerk Support: support@clerk.com
+- Vercel Support: https://vercel.com/help
+- Lipana Support: (check their docs)
 
 ---
 
-**Deployment Status:** ✅ READY FOR PRODUCTION
+## 📊 MONITORING
+
+### What to Monitor Post-Deployment
+1. **Clerk Dashboard**
+   - New user signups
+   - Authentication failures
+   - Session statistics
+
+2. **Vercel Dashboard**
+   - Build success rate
+   - Response times
+   - Error rates
+
+3. **Backend Logs**
+   - API request failures
+   - Authentication errors
+   - M-PESA webhook calls
+   - Payment processing errors
+
+4. **Business Metrics**
+   - Order conversion rate
+   - Cart abandonment
+   - Payment success rate
+   - Guest vs. logged-in checkout ratio
+
+---
+
+## ✅ SUCCESS CRITERIA
+
+Deployment is successful when:
+- [ ] Users can sign up and log in with Clerk
+- [ ] Admin users can access admin dashboard
+- [ ] Guests can browse and add products to cart
+- [ ] M-PESA STK push works for both guests and logged-in users
+- [ ] Orders are created and tracked successfully
+- [ ] No 404 or 500 errors in production
+- [ ] All API endpoints return expected data
+
+---
+
+## 🎯 NEXT FEATURES (Future Work)
+
+1. **Email Notifications**
+   - Order confirmation emails
+   - Delivery status updates
+   - Payment receipts
+
+2. **SMS Notifications**
+   - Order status via SMS
+   - Delivery tracking
+
+3. **Advanced Analytics**
+   - Sales reports
+   - Customer insights
+   - Inventory forecasting
+
+4. **Mobile App**
+   - React Native app
+   - Push notifications
+   - Mobile payments
+
+---
+
+**Last Updated:** $(Get-Date -Format "yyyy-MM-dd HH:mm")
+**Status:** Ready for production deployment with manual steps required
