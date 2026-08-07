@@ -96,7 +96,9 @@ function Router() {
 
         {/* Auth */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
+        <Route path="/login/:rest*" component={() => <PublicRoute component={Login} hideLayout />} />
         <Route path="/sign-up" component={() => <PublicRoute component={SignUp} hideLayout />} />
+        <Route path="/sign-up/:rest*" component={() => <PublicRoute component={SignUp} hideLayout />} />
 
         {/* Policies */}
         <Route path="/privacy" component={() => <PublicRoute component={Privacy} />} />

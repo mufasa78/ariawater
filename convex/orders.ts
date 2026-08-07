@@ -7,14 +7,14 @@ import { Id } from "./_generated/dataModel";
 
 export const listByCustomer = query({
   args: {
-    customerId: v.id("users"),
+    customerId: v.string(), // supports both Clerk strings and old Convex IDs
     page: v.optional(v.number()),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { customerId, page = 1, limit = 20 }) => {
     const all = await ctx.db
       .query("orders")
-      .withIndex("by_customer", (q) => q.eq("customerId", customerId))
+      .withIndex("by_customer", (q) => q.eq("customerId", customerId as any))
       .order("desc")
       .collect();
 
@@ -49,12 +49,15 @@ export const listAll = query({
         let customerName = order.customerName ?? null;
         let customerEmail = order.customerEmail ?? null;
         
-        // If customerId exists, fetch customer details
+        // If customerId exists and is a valid users table ID, fetch customer details
         if (order.customerId) {
-          const customer = await ctx.db.get(order.customerId);
-          if (customer) {
-            customerName = customer.name;
-            customerEmail = customer.email;
+          const userId = ctx.db.normalizeId("users", order.customerId);
+          if (userId) {
+            const customer = await ctx.db.get(userId);
+            if (customer) {
+              customerName = customer.name;
+              customerEmail = customer.email;
+            }
           }
         }
         
@@ -84,12 +87,15 @@ export const get = query({
     let customerName = order.customerName ?? null;
     let customerEmail = order.customerEmail ?? null;
     
-    // If customerId exists, fetch customer details
+    // If customerId exists and is a valid users table ID, fetch customer details
     if (order.customerId) {
-      const customer = await ctx.db.get(order.customerId);
-      if (customer) {
-        customerName = customer.name;
-        customerEmail = customer.email;
+      const userId = ctx.db.normalizeId("users", order.customerId);
+      if (userId) {
+        const customer = await ctx.db.get(userId);
+        if (customer) {
+          customerName = customer.name;
+          customerEmail = customer.email;
+        }
       }
     }
 
@@ -131,7 +137,7 @@ export const get = query({
 
 export const create = mutation({
   args: {
-    customerId: v.optional(v.id("users")), // Optional for guest orders
+    customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
     customerName: v.optional(v.string()), // Guest customer name
     customerEmail: v.optional(v.string()), // Guest customer email
     deliveryAddress: v.string(),
@@ -275,7 +281,7 @@ export const updatePayment = mutation({
 export const getByPaystackRef = query({
   args: {
     reference: v.string(),
-    customerId: v.optional(v.id("users")),
+    customerId: v.optional(v.string()),
   },
   handler: async (ctx, { reference, customerId }) => {
     const order = await ctx.db

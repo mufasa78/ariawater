@@ -21,7 +21,7 @@ const router: Router = Router();
 function mapOrder(o: Record<string, unknown>) {
   return {
     id: o._id,
-    customerId: o.customerId,
+    customerId: (o.customerId as string) ?? "",
     customerName: o.customerName ?? null,
     customerEmail: o.customerEmail ?? null,
     status: o.status,
