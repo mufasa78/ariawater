@@ -32,8 +32,20 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 type MpesaStatus = 'idle' | 'pending' | 'success' | 'failed';
 
+// Phone number validation helper
+const isValidKenyanPhone = (phone: string): boolean => {
+  const cleaned = phone.replace(/[\s\-+]/g, '');
+  if (cleaned.startsWith('0')) {
+    return /^0[17]\d{8}$/.test(cleaned);
+  }
+  if (cleaned.startsWith('254')) {
+    return /^254[17]\d{8}$/.test(cleaned);
+  }
+  return false;
+};
+
 export default function Shop() {
-  const { data: products, isLoading } = useListProducts({ inStock: 'true' });
+  const { data: products, isLoading } = useListProducts({ inStock: 'true' as any });
   const { items, addToCart, removeFromCart, updateQuantity, totalKes, totalItems, clearCart } =
     useCart();
   const { user } = useAuth();
@@ -54,6 +66,7 @@ export default function Shop() {
   const [mpesaRef, setMpesaRef] = useState<string | null>(null);
   const [mpesaStatus, setMpesaStatus] = useState<MpesaStatus>('idle');
   const [mpesaMessage, setMpesaMessage] = useState('');
+  const [ticketNumber, setTicketNumber] = useState('');
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -83,7 +96,6 @@ export default function Shop() {
               setMpesaStatus('success');
               if (pollRef.current) clearInterval(pollRef.current);
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
-              setTimeout(() => setLocation('/orders'), 2200);
             } else if (res.status === 'failed') {
               setMpesaStatus('failed');
               setMpesaMessage((res as any).message || 'Payment was declined or cancelled.');
@@ -113,17 +125,25 @@ export default function Shop() {
   }, [mpesaRef, mpesaStatus]);
 
   const handleAddToCart = (product: any) => {
+    if (!product || !product.id) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Invalid product data.',
+      });
+      return;
+    }
     addToCart({
       productId: product.id,
-      productName: product.name,
-      packSize: product.packSize,
-      unitPriceKes: product.priceKes,
+      productName: product.name || 'Unknown Product',
+      packSize: product.packSize || '',
+      unitPriceKes: product.priceKes || 0,
       quantity: 1,
       imageUrl: product.imageUrl,
     });
     toast({
       title: 'Added to cart',
-      description: `${product.name} has been added to your cart.`,
+      description: `${product.name || 'Product'} has been added to your cart.`,
       duration: 2000,
     });
   };
@@ -148,6 +168,16 @@ export default function Shop() {
       return;
     }
 
+    // Validate phone number format
+    if (!isValidKenyanPhone(phone)) {
+      toast({
+        variant: 'destructive',
+        title: 'Invalid phone number',
+        description: 'Please enter a valid Kenyan phone number (e.g., 0712345678 or 254712345678).',
+      });
+      return;
+    }
+
     createOrder.mutate(
       {
         data: {
@@ -166,6 +196,7 @@ export default function Shop() {
       {
         onSuccess: (order) => {
           clearCart();
+          setTicketNumber(order.ticketNumber || '');
 
           // Initiate Lipana M-Pesa STK push
           initPayment.mutate(
@@ -180,12 +211,12 @@ export default function Shop() {
                 );
               },
               onError: () => {
-                // Order was placed; payment initiation failed — let them go to orders
+                // Order was placed; payment initiation failed — let them go to track
                 toast({
                   title: 'Order placed!',
-                  description: 'M-Pesa prompt could not be sent. You can complete payment from your orders page.',
+                  description: 'M-Pesa prompt could not be sent. You can track your order using your ticket number.',
                 });
-                setLocation('/orders');
+                setLocation('/track?ticket=' + (order.ticketNumber || ''));
               },
             },
           );
@@ -239,7 +270,7 @@ export default function Shop() {
                   </Card>
                 ))}
               </div>
-            ) : products?.length === 0 ? (
+            ) : !products || !Array.isArray(products) || products.length === 0 ? (
               <div className="text-center py-20 bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 <ShoppingCart className="h-12 w-12 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-slate-900">No products available</h3>
@@ -247,7 +278,7 @@ export default function Shop() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {products?.map((product) => (
+                {products.map((product) => (
                   <Card
                     key={product.id}
                     className="overflow-hidden border-slate-100 shadow-sm hover:shadow-md transition-shadow group flex flex-col"
@@ -289,7 +320,7 @@ export default function Shop() {
           {/* Cart Sidebar */}
           {totalItems > 0 && (
             <div className="lg:w-1/3 w-full">
-              <div className="sticky top-[100px]">
+              <div className="sticky top-25">
                 <Card className="border-slate-200 shadow-lg shadow-slate-200/50 overflow-hidden">
                   <div className="bg-slate-900 px-6 py-4">
                     <h2 className="text-base font-bold text-white flex items-center gap-2">
@@ -303,7 +334,7 @@ export default function Shop() {
                         <div className="max-h-[50vh] overflow-y-auto divide-y divide-slate-100">
                           {items.map((item) => (
                             <div key={item.productId} className="p-4 flex gap-4">
-                              <div className="h-16 w-16 bg-slate-50 rounded-md flex-shrink-0 flex items-center justify-center p-2">
+                              <div className="h-16 w-16 bg-slate-50 rounded-md shrink-0 flex items-center justify-center p-2">
                                 {item.imageUrl ? (
                                   <img
                                     src={item.imageUrl}
@@ -535,10 +566,10 @@ export default function Shop() {
                       if (timeoutRef.current) clearTimeout(timeoutRef.current);
                       setMpesaStatus('idle');
                       setMpesaRef(null);
-                      setLocation('/orders');
+                      setLocation('/track?ticket=' + ticketNumber);
                     }}
                   >
-                    Pay later from your orders
+                    Pay later / Track Order
                   </button>
                 </p>
               </div>
@@ -568,8 +599,8 @@ Amount: KES ${totalKes.toLocaleString()}
 Payment Method: M-Pesa
 Status: PAID
 
-Customer: ${customerName}
-Email: ${customerEmail}
+Customer: ${user?.name || customerName}
+Email: ${user?.email || customerEmail}
 Phone: ${phone}
 Delivery Address: ${deliveryAddress}
 ${notes ? `Notes: ${notes}` : ''}
@@ -592,10 +623,10 @@ Thank you for your order!
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={() => setLocation('/orders')}
+                    onClick={() => setLocation('/track?ticket=' + ticketNumber)}
                     className="w-full"
                   >
-                    View Orders
+                    Track Order (Ticket: {ticketNumber})
                   </Button>
                 </div>
               </div>
@@ -618,10 +649,10 @@ Thank you for your order!
                     onClick={() => {
                       setMpesaStatus('idle');
                       setMpesaRef(null);
-                      setLocation('/orders');
+                      setLocation('/track?ticket=' + ticketNumber);
                     }}
                   >
-                    View Orders
+                    Track Order
                   </Button>
                   <Button
                     size="sm"
