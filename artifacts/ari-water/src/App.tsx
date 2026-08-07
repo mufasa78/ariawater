@@ -2,13 +2,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
-import { AuthProvider, useAuth } from '@/lib/auth-context';
 import { CartProvider } from '@/lib/cart-context';
 import { AppLayout, AdminLayout } from '@/components/layout/Layouts';
 import { CookieConsentBanner } from '@/components/layout/CookieConsentBanner';
 import { useEffect } from 'react';
 import { trackPageView } from '@/lib/analytics';
 import { setBaseUrl } from '@workspace/api-client-react';
+import { ClerkProvider } from '@clerk/clerk-react';
+import { ClerkAuthWrapper, useAuth } from '@/lib/clerk-auth-wrapper';
 
 // Initialize API client base URL
 const apiUrl = import.meta.env.VITE_API_URL;
@@ -16,10 +17,18 @@ if (apiUrl) {
   setBaseUrl(apiUrl);
 }
 
+// Clerk configuration
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
+if (!CLERK_PUBLISHABLE_KEY) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
+}
+
 // Pages
 import Landing from '@/pages/Landing';
 import Shop from '@/pages/Shop';
 import Login from '@/pages/Login';
+import SignUp from '@/pages/SignUp';
 import Privacy from '@/pages/Privacy';
 import Terms from '@/pages/Terms';
 import CookiePolicy from '@/pages/CookiePolicy';
@@ -47,11 +56,19 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
   const [, setLocation] = useLocation();
 
   useEffect(() => {
-    if (!isLoading && (!user || user.role !== 'admin')) setLocation('/login');
-  }, [isLoading, user]);
+    if (!isLoading && (!user || user.role !== 'admin')) {
+      setLocation('/login');
+    }
+  }, [isLoading, user, setLocation]);
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
-  if (!user || user.role !== 'admin') return null;
+  if (isLoading) {
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading…</div>;
+  }
+  
+  if (!user || user.role !== 'admin') {
+    return null;
+  }
+  
   return <AdminLayout><Component /></AdminLayout>;
 }
 
@@ -71,8 +88,9 @@ function Router() {
         <Route path="/about" component={() => <PublicRoute component={About} />} />
         <Route path="/track" component={() => <PublicRoute component={Track} />} />
 
-        {/* Admin Login */}
+        {/* Auth */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />
+        <Route path="/sign-up" component={() => <PublicRoute component={SignUp} hideLayout />} />
 
         {/* Policies */}
         <Route path="/privacy" component={() => <PublicRoute component={Privacy} />} />
@@ -95,25 +113,27 @@ function Router() {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-        <AuthProvider>
-          <CartProvider>
-            {/*
-              CookieConsentBanner wraps the app as a context provider so any
-              component can call useConsent() to check analytics/marketing consent.
-              The visible banner and manage-preferences modal are rendered inside it.
-            */}
-            <CookieConsentBanner>
-              <TooltipProvider>
-                <Router />
-                <Toaster />
-              </TooltipProvider>
-            </CookieConsentBanner>
-          </CartProvider>
-        </AuthProvider>
-      </WouterRouter>
-    </QueryClientProvider>
+    <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+      <QueryClientProvider client={queryClient}>
+        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
+          <ClerkAuthWrapper>
+            <CartProvider>
+              {/*
+                CookieConsentBanner wraps the app as a context provider so any
+                component can call useConsent() to check analytics/marketing consent.
+                The visible banner and manage-preferences modal are rendered inside it.
+              */}
+              <CookieConsentBanner>
+                <TooltipProvider>
+                  <Router />
+                  <Toaster />
+                </TooltipProvider>
+              </CookieConsentBanner>
+            </CartProvider>
+          </ClerkAuthWrapper>
+        </WouterRouter>
+      </QueryClientProvider>
+    </ClerkProvider>
   );
 }
 

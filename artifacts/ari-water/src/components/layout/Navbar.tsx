@@ -1,27 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useAuth } from "@/lib/auth-context";
+import { useAuth } from "@/lib/clerk-auth-wrapper";
+import { SignedIn, SignedOut, UserButton } from "@clerk/clerk-react";
 import { useCart } from "@/lib/cart-context";
-import { getInitials } from "@/lib/utils";
 import {
   ShoppingCart,
   Menu,
   X,
-  LogOut,
   ArrowRight,
   Package,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
-import { getGetMeQueryKey } from "@workspace/api-client-react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 
 const AriWaterLogo = () => (
   <img
@@ -32,11 +23,10 @@ const AriWaterLogo = () => (
 );
 
 export function Navbar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { totalItems } = useCart();
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const queryClient = useQueryClient();
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -48,11 +38,6 @@ export function Navbar() {
     { href: "/shop", label: "Shop Water" },
     { href: "/about", label: "About" },
   ];
-
-  const handleLogout = async () => {
-    await logout();
-    queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
-  };
 
   return (
     <>
@@ -100,32 +85,25 @@ export function Navbar() {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
-              {user?.role === "admin" ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <button className="flex items-center justify-center h-8 w-8 rounded-full bg-primary/10 text-primary font-bold text-xs hover:bg-primary/20 transition-colors focus:outline-none ring-2 ring-transparent focus:ring-primary/30">
-                      {getInitials(user?.name)}
-                    </button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <div className="px-2 py-1.5 text-sm font-medium text-foreground truncate">
-                      {user.name}
-                    </div>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem asChild>
-                      <Link href="/admin" className="w-full cursor-pointer flex items-center">
-                        <Package className="mr-2 h-4 w-4" /> Dashboard
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={handleLogout}
-                      className="text-destructive focus:text-destructive cursor-pointer"
-                    >
-                      <LogOut className="mr-2 h-4 w-4" /> Log out
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
+              <SignedIn>
+                {user?.role === "admin" && (
+                  <Link href="/admin">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <Package className="h-4 w-4" /> Dashboard
+                    </Button>
+                  </Link>
+                )}
+                <UserButton 
+                  afterSignOutUrl="/"
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-8 w-8",
+                    },
+                  }}
+                />
+              </SignedIn>
+              
+              <SignedOut>
                 <>
                   <Link
                     href="/shop"
@@ -139,18 +117,23 @@ export function Navbar() {
                       </span>
                     )}
                   </Link>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <User className="h-4 w-4" /> Sign In
+                    </Button>
+                  </Link>
                   <Link href="/shop">
                     <Button size="sm" className="font-medium text-sm h-8 bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm">
                       Order Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
                     </Button>
                   </Link>
                 </>
-              )}
+              </SignedOut>
             </div>
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-2 md:hidden">
-              {user?.role !== "admin" && (
+              <SignedOut>
                 <Link href="/shop" className="relative text-muted-foreground p-1.5" aria-label="Cart">
                   <ShoppingCart className="h-5 w-5" />
                   {totalItems > 0 && (
@@ -159,7 +142,7 @@ export function Navbar() {
                     </span>
                   )}
                 </Link>
-              )}
+              </SignedOut>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-1.5 text-foreground"
@@ -199,44 +182,54 @@ export function Navbar() {
                   </Link>
                 );
               })}
-              {user?.role === "admin" && (
-                <Link
-                  href="/admin"
-                  className="px-4 py-3 rounded-xl text-base font-medium text-foreground hover:bg-accent"
-                >
-                  Admin Dashboard
-                </Link>
-              )}
+              <SignedIn>
+                {user?.role === "admin" && (
+                  <Link
+                    href="/admin"
+                    className="px-4 py-3 rounded-xl text-base font-medium text-foreground hover:bg-accent"
+                  >
+                    Admin Dashboard
+                  </Link>
+                )}
+              </SignedIn>
             </nav>
 
             <div className="border-t border-border mx-4 mb-4 mt-2 pt-4">
-              {user?.role === "admin" ? (
+              <SignedIn>
                 <div className="space-y-3">
-                  <div className="flex items-center gap-3 px-2">
-                    <div className="h-9 w-9 bg-primary/10 rounded-full flex items-center justify-center text-primary font-bold text-sm shrink-0">
-                      {getInitials(user?.name)}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm truncate">{user.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <div className="flex items-center justify-between px-2">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <UserButton 
+                        afterSignOutUrl="/"
+                        appearance={{
+                          elements: {
+                            avatarBox: "h-9 w-9",
+                          },
+                        }}
+                      />
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm truncate">{user?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                      </div>
                     </div>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={handleLogout}
-                  >
-                    <LogOut className="mr-2 h-4 w-4" /> Log out
-                  </Button>
                 </div>
-              ) : (
-                <Link href="/shop" className="flex-1">
-                  <Button size="sm" className="w-full bg-primary text-primary-foreground">
-                    Order Now
-                  </Button>
-                </Link>
-              )}
+              </SignedIn>
+              
+              <SignedOut>
+                <div className="space-y-2">
+                  <Link href="/login" className="block">
+                    <Button variant="outline" size="sm" className="w-full">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/shop" className="block">
+                    <Button size="sm" className="w-full bg-primary text-primary-foreground">
+                      Order Now
+                    </Button>
+                  </Link>
+                </div>
+              </SignedOut>
             </div>
           </motion.div>
         )}

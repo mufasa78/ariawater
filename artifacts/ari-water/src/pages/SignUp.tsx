@@ -1,15 +1,15 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { SignIn, useAuth } from '@clerk/clerk-react';
+import { SignUp as ClerkSignUp, useAuth } from '@clerk/clerk-react';
 
-export default function Login() {
+export default function SignUp() {
   const [, setLocation] = useLocation();
   const { isSignedIn } = useAuth();
 
   // Redirect if already signed in
   useEffect(() => {
     if (isSignedIn) {
-      setLocation('/admin');
+      setLocation('/shop');
     }
   }, [isSignedIn, setLocation]);
 
@@ -21,19 +21,19 @@ export default function Login() {
             <img src="/ari-water-logo.png" alt="Ari Water" className="h-14 w-auto object-contain" />
           </Link>
           <h2 className="text-center text-3xl font-display font-bold text-slate-900 tracking-tight mb-2">
-            Welcome Back
+            Create Account
           </h2>
           <p className="text-center text-sm text-slate-600 mb-8">
-            Sign in to access your account
+            Join Ari Water to track orders and manage your account
           </p>
         </div>
 
         <div className="flex justify-center">
-          <SignIn 
+          <ClerkSignUp 
             routing="path"
-            path="/login"
-            signUpUrl="/sign-up"
-            afterSignInUrl="/admin"
+            path="/sign-up"
+            signInUrl="/login"
+            afterSignUpUrl="/shop"
             appearance={{
               elements: {
                 rootBox: 'mx-auto',
@@ -44,9 +44,9 @@ export default function Login() {
         </div>
 
         <p className="text-center text-sm text-slate-500 mt-6">
-          Customer? No account needed!{' '}
-          <Link href="/shop" className="text-primary hover:underline font-medium">
-            Shop now
+          Already have an account?{' '}
+          <Link href="/login" className="text-primary hover:underline font-medium">
+            Sign in
           </Link>
         </p>
       </div>
