@@ -104,38 +104,42 @@ export default function Shop() {
   useEffect(() => {
     if (!mpesaRef || mpesaStatus !== 'pending') return;
 
-    // Poll every 5 seconds
-    pollRef.current = setInterval(() => {
-      verifyPayment.mutate(
-        { data: { reference: mpesaRef } },
-        {
-          onSuccess: (res) => {
-            if (res.status === 'success') {
-              setMpesaStatus('success');
-              setMpesaMessage('Payment completed successfully! Your order is confirmed.');
-              if (pollRef.current) clearInterval(pollRef.current);
-              if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            } else if (res.status === 'failed') {
-              setMpesaStatus('failed');
-              setMpesaMessage((res as any).message || 'Payment was declined or cancelled.');
-              if (pollRef.current) clearInterval(pollRef.current);
-              if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            }
-            // status === 'pending' → keep polling
-          },
-          onError: (error) => {
-            console.error('Payment verification error:', error);
-            // Don't stop polling on network errors - might be transient
-            retryCountRef.current += 1;
-            if (retryCountRef.current >= MAX_RETRIES) {
-              setMpesaStatus('failed');
-              setMpesaMessage('Unable to verify payment status. Please check your orders page.');
-              if (pollRef.current) clearInterval(pollRef.current);
-              if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            }
-          },
-        },
-      );
+    // Poll every 5 seconds using GET status endpoint (source of truth: DB)
+    pollRef.current = setInterval(async () => {
+      try {
+        const response = await fetch(`/api/payments/${mpesaRef}/status`, {
+          credentials: 'include',
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Status check failed: ${response.status}`);
+        }
+        
+        const res = await response.json();
+        
+        if (res.status === 'success') {
+          setMpesaStatus('success');
+          setMpesaMessage('Payment completed successfully! Your order is confirmed.');
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        } else if (res.status === 'failed') {
+          setMpesaStatus('failed');
+          setMpesaMessage(res.message || 'Payment was declined or cancelled.');
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        }
+        // status === 'pending' → keep polling
+      } catch (error) {
+        console.error('Payment verification error:', error);
+        // Don't stop polling on network errors - might be transient
+        retryCountRef.current += 1;
+        if (retryCountRef.current >= MAX_RETRIES) {
+          setMpesaStatus('failed');
+          setMpesaMessage('Unable to verify payment status. Please check your orders page.');
+          if (pollRef.current) clearInterval(pollRef.current);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        }
+      }
     }, 5000);
 
     // Timeout after 3 minutes

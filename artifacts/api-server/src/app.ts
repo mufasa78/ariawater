@@ -51,7 +51,13 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
+
+// Capture raw body for webhook signature verification BEFORE JSON parsing
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Clerk authentication middleware

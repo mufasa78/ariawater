@@ -261,9 +261,10 @@ router.post("/webhook/lipana", async (req, res) => {
       return;
     }
 
-    // Verify webhook signature
+    // Verify webhook signature using RAW request body
     const lipana = getLipanaClient();
-    const payload = JSON.stringify(req.body);
+    const rawBody = (req as any).rawBody || (req as any).body;
+    const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(req.body);
     const isValid = lipana.verifyWebhookSignature(payload, signature, webhookSecret);
 
     if (!isValid) {
@@ -319,6 +320,57 @@ router.post("/webhook/lipana", async (req, res) => {
       message: error instanceof Error ? error.message : "Unknown error" 
     });
   }
+});
+
+// GET /api/payments/:reference/status - Get payment status by reference
+router.get("/:reference/status", optionalAuth, async (req, res) => {
+  const { reference } = req.params;
+  const isAdmin = req.user?.role === "admin";
+
+  req.log?.info?.({ reference, isAdmin }, "Payment status request");
+
+  // Lipana M-Pesa Status - READ FROM DB ONLY (source of truth)
+  if (PAYMENT_PROVIDER === "lipana") {
+    try {
+      // Find order by reference - this is our source of truth
+      const order = await convex.query(api.orders.getByPaystackRef, {
+        reference,
+        customerId: isAdmin ? undefined : (req.user?.userId as any),
+      }) as Record<string, unknown> | null;
+
+      if (!order) {
+        req.log?.warn?.({ reference }, "Order not found for status check");
+        res.status(404).json({ error: "Payment not found" });
+        return;
+      }
+
+      // Return the status from our database (webhook-updated)
+      const paymentStatus = order.paymentStatus as string;
+      const isSuccess = paymentStatus === "completed";
+      const isFailed = paymentStatus === "failed";
+      const isPending = paymentStatus === "pending";
+
+      req.log?.info?.({ orderId: order._id, paymentStatus }, "Payment status from DB");
+
+      res.json({
+        success: isSuccess,
+        status: isSuccess ? "success" : (isFailed ? "failed" : "pending"),
+        orderId: (order._id as string) ?? null,
+        message: isSuccess ? "Payment completed" : (isFailed ? "Payment failed" : "Payment pending"),
+      });
+      return;
+    } catch (error) {
+      req.log?.error?.({ err: error, reference }, "Payment status check error");
+      res.status(500).json({ 
+        error: "Failed to check payment status",
+        message: error instanceof Error ? error.message : "Unknown error" 
+      });
+      return;
+    }
+  }
+
+  // Paystack fallback
+  res.status(501).json({ error: "Payment provider not configured" });
 });
 
 export default router;
