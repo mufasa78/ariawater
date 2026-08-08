@@ -24,14 +24,10 @@ if (apiUrl) {
 }
 
 // Clerk configuration
-const CLERK_PUBLISHABLE_KEY =
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_CLERK_PUBLIC_KEY;
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!CLERK_PUBLISHABLE_KEY) {
-  throw new Error(
-    'Missing Clerk browser key. Set VITE_CLERK_PUBLISHABLE_KEY in the Vercel Preview environment.'
-  );
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
 }
 
 // Pages
@@ -49,7 +45,6 @@ import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
 import AdminMarketing from '@/pages/AdminMarketing';
 import AdminAccounting from '@/pages/AdminAccounting';
-import Orders from '@/pages/Orders';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
@@ -98,7 +93,6 @@ function Router() {
         <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
         <Route path="/about" component={() => <PublicRoute component={About} />} />
         <Route path="/track" component={() => <PublicRoute component={Track} />} />
-        <Route path="/orders" component={() => <PublicRoute component={Orders} />} />
 
         {/* Auth */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />

@@ -18,11 +18,6 @@ import {
 
 const router: Router = Router();
 
-// Convex document IDs are opaque strings, but they have a stable 32-character
-// shape. Reject malformed IDs before they reach Convex so a bad cart item
-// becomes a useful client error instead of Convex's generic 500 response.
-const isConvexId = (value: string) => /^[a-z0-9]{32}$/.test(value);
-
 function mapOrder(o: Record<string, unknown>) {
   return {
     id: o._id,
@@ -136,14 +131,6 @@ router.post("/", optionalAuth, async (req, res) => {
     return;
   }
 
-  const malformedProductId = parsed.data.items.find(
-    (item) => !isConvexId(item.productId),
-  );
-  if (malformedProductId) {
-    res.status(400).json({ error: "One or more cart products are invalid or no longer available" });
-    return;
-  }
-
   let order: Record<string, unknown>;
   try {
     order = await convex.mutation(api.orders.create, {
@@ -161,15 +148,8 @@ router.post("/", optionalAuth, async (req, res) => {
     }) as Record<string, unknown>;
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    if (msg.includes("Insufficient stock") || msg.includes("not found") || msg.includes("Product")) {
+    if (msg.includes("Insufficient stock") || msg.includes("not found")) {
       res.status(400).json({ error: msg });
-      return;
-    }
-    // Convex intentionally redacts function errors in some environments.
-    // Keep checkout user-safe when that happens instead of returning an HTML
-    // or opaque 500 response to the browser.
-    if (msg.includes("Request ID") || msg.includes("Server Error")) {
-      res.status(400).json({ error: "Unable to create the order. Check the products in your cart and try again." });
       return;
     }
     throw err;

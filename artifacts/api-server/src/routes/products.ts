@@ -37,6 +37,20 @@ function mapProduct(p: Record<string, unknown>) {
 
 // GET /api/products
 router.get("/", async (req, res) => {
+  const params = ListProductsQueryParams.safeParse(req.query);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const { category } = params.data;
+  const inStock = req.query.inStock === "true";
+
+  const products = await convex.query(api.products.list, {
+    category: category ?? undefined,
+    inStock: inStock ? true : undefined,
+    activeOnly: inStock ? true : undefined,
+  }) as Record<string, unknown>[];
   try {
     const params = ListProductsQueryParams.safeParse(req.query);
     if (!params.success) {

@@ -85,6 +85,19 @@ export function Navbar() {
 
             {/* Desktop Actions */}
             <div className="hidden md:flex items-center gap-3 shrink-0">
+              <Link
+                href="/shop"
+                className="relative text-muted-foreground hover:text-primary transition-colors p-1.5 mr-1"
+                aria-label={`Cart (${totalItems} items)`}
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
+
               <SignedIn>
                 {user?.role === "admin" && (
                   <Link href="/admin">
@@ -105,18 +118,6 @@ export function Navbar() {
               
               <SignedOut>
                 <>
-                  <Link
-                    href="/shop"
-                    className="relative text-muted-foreground hover:text-primary transition-colors p-1.5"
-                    aria-label={`Cart (${totalItems} items)`}
-                  >
-                    <ShoppingCart className="h-5 w-5" />
-                    {totalItems > 0 && (
-                      <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center shadow-sm">
-                        {totalItems}
-                      </span>
-                    )}
-                  </Link>
                   <Link href="/login">
                     <Button variant="ghost" size="sm" className="gap-2">
                       <User className="h-4 w-4" /> Sign In
@@ -133,16 +134,14 @@ export function Navbar() {
 
             {/* Mobile Actions */}
             <div className="flex items-center gap-2 md:hidden">
-              <SignedOut>
-                <Link href="/shop" className="relative text-muted-foreground p-1.5" aria-label="Cart">
-                  <ShoppingCart className="h-5 w-5" />
-                  {totalItems > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
-                      {totalItems}
-                    </span>
-                  )}
-                </Link>
-              </SignedOut>
+              <Link href="/shop" className="relative text-muted-foreground p-1.5" aria-label="Cart">
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-primary text-primary-foreground text-[10px] font-bold h-4 w-4 rounded-full flex items-center justify-center">
+                    {totalItems}
+                  </span>
+                )}
+              </Link>
               <button
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="p-1.5 text-foreground"

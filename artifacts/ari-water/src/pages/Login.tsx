@@ -1,17 +1,22 @@
 import React, { useEffect } from 'react';
 import { Link, useLocation } from 'wouter';
-import { SignIn, useAuth } from '@clerk/clerk-react';
+import { SignIn } from '@clerk/clerk-react';
+import { useAuth } from '@/lib/clerk-auth-wrapper';
 
 export default function Login() {
   const [, setLocation] = useLocation();
-  const { isSignedIn } = useAuth();
+  const { user, isSignedIn, isLoading } = useAuth();
 
-  // Redirect if already signed in
+  // Redirect based on role if already signed in
   useEffect(() => {
-    if (isSignedIn) {
-      setLocation('/admin');
+    if (!isLoading && isSignedIn && user) {
+      if (user.role === 'admin') {
+        setLocation('/admin');
+      } else {
+        setLocation('/shop');
+      }
     }
-  }, [isSignedIn, setLocation]);
+  }, [isLoading, isSignedIn, user, setLocation]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
@@ -33,6 +38,7 @@ export default function Login() {
             routing="path"
             path="/login"
             signUpUrl="/sign-up"
+            afterSignInUrl="/login"
             fallbackRedirectUrl="/admin"
             forceRedirectUrl="/admin"
             appearance={{
