@@ -212,10 +212,11 @@ export default function Shop() {
             { data: { orderId: order.id } },
             {
               onSuccess: (res) => {
-                setMpesaRef(res.reference);
-                setMpesaStatus('pending');
-                setMpesaMessage(
-                  (res as any).message ||
+                  setMpesaRef(res.reference);
+                  setMpesaStatus('pending');
+                  const requestedAmount = res.amountKes ?? payableAmountKes;
+                  setMpesaMessage(
+                    `${(res as any).message || 'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.'} Amount requested: ${formatKes(requestedAmount)}.`,
                     'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
                 );
               },
@@ -259,6 +260,12 @@ export default function Shop() {
       },
     );
   };
+
+  const cartSubtotalKes = items.reduce(
+    (sum, item) => sum + Math.round(Number(item.unitPriceKes) * Number(item.quantity)),
+    0,
+  );
+  const payableAmountKes = cartSubtotalKes;
 
   const isProcessing = createOrder.isPending || initPayment.isPending;
 
@@ -518,7 +525,7 @@ export default function Shop() {
                       <CardFooter className="p-5 bg-slate-50 flex-col gap-3">
                         <div className="w-full flex justify-between items-center">
                           <span className="font-medium text-slate-600 text-sm">Total to pay:</span>
-                          <span className="font-bold text-xl text-slate-900">{formatKes(totalKes)}</span>
+                          <span className="font-bold text-xl text-slate-900">{formatKes(payableAmountKes)}</span>
                         </div>
                         <Button
                           className="w-full h-11 text-base font-semibold"
@@ -570,7 +577,7 @@ export default function Shop() {
                     An M-Pesa payment prompt has been sent to{' '}
                     <strong className="text-slate-900">{phone}</strong>. Enter your M-Pesa PIN to
                     confirm the payment of{' '}
-                    <strong className="text-primary">{formatKes(totalKes)}</strong>.
+                    <strong className="text-primary">{formatKes(payableAmountKes)}</strong>.
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3">
