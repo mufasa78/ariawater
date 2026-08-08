@@ -112,6 +112,15 @@ export default function Shop() {
         });
         
         if (!response.ok) {
+          const errorData = await response.json();
+          // If payment not found, stop polling and show error
+          if (response.status === 404) {
+            setMpesaStatus('failed');
+            setMpesaMessage(errorData.message || 'Payment record not found. Please try again.');
+            if (pollRef.current) clearInterval(pollRef.current);
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            return;
+          }
           throw new Error(`Status check failed: ${response.status}`);
         }
         
