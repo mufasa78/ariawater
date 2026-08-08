@@ -45,7 +45,6 @@ import AdminOrders from '@/pages/AdminOrders';
 import AdminProducts from '@/pages/AdminProducts';
 import AdminMarketing from '@/pages/AdminMarketing';
 import AdminAccounting from '@/pages/AdminAccounting';
-import Orders from '@/pages/Orders';
 import NotFound from '@/pages/not-found';
 
 const queryClient = new QueryClient();
@@ -94,7 +93,6 @@ function Router() {
         <Route path="/shop" component={() => <PublicRoute component={Shop} />} />
         <Route path="/about" component={() => <PublicRoute component={About} />} />
         <Route path="/track" component={() => <PublicRoute component={Track} />} />
-        <Route path="/orders" component={() => <PublicRoute component={Orders} />} />
 
         {/* Auth */}
         <Route path="/login" component={() => <PublicRoute component={Login} hideLayout />} />

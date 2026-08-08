@@ -43,11 +43,13 @@ router.get("/", async (req, res) => {
     return;
   }
 
-  const { category, inStock } = params.data;
+  const { category } = params.data;
+  const inStock = req.query.inStock === "true";
 
   const products = await convex.query(api.products.list, {
     category: category ?? undefined,
-    inStock: inStock === "true" ? true : undefined,
+    inStock: inStock ? true : undefined,
+    activeOnly: inStock ? true : undefined,
   }) as Record<string, unknown>[];
 
   res.json(ListProductsResponse.parse(products.map(mapProduct)));

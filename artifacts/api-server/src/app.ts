@@ -84,9 +84,6 @@ app.use((_req, res, next) => {
 
 // Mount routes directly to support both with and without /api prefix
 app.use("/", router);
-// Replit preserves the artifact's `/api` service path when proxying requests.
-// Keep the prefix here so `/api/products`, `/api/orders`, and `/api/healthz`
-// reach the same route handlers in both preview and production.
 app.use("/api", router);
 
 // ── Global error handler — must be last, must have 4 args ────────────────────
