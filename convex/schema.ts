@@ -80,6 +80,28 @@ export default defineSchema({
     .index("by_order", ["orderId"])
     .index("by_customer", ["customerId"]),
 
+  payments: defineTable({
+    orderId: v.id("orders"),
+    provider: v.literal("lipana"),
+    providerTransactionId: v.optional(v.string()),
+    amount: v.number(),
+    phone: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("initiated"),
+      v.literal("successful"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+      v.literal("expired")
+    ),
+    providerReference: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_order", ["orderId"])
+    .index("by_provider_transaction", ["providerTransactionId"]),
+
   magicLinkTokens: defineTable({
     email: v.string(),
     token: v.string(),

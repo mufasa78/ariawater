@@ -24,14 +24,10 @@ if (apiUrl) {
 }
 
 // Clerk configuration
-const CLERK_PUBLISHABLE_KEY =
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY ||
-  import.meta.env.VITE_CLERK_PUBLIC_KEY;
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
 
 if (!CLERK_PUBLISHABLE_KEY) {
-  throw new Error(
-    'Missing Clerk browser key. Set VITE_CLERK_PUBLISHABLE_KEY in the Vercel Preview environment.'
-  );
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
 }
 
 // Pages

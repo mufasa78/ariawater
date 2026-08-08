@@ -36,17 +36,6 @@ export function ClerkAuthWrapper({ children }: { children: React.ReactNode }) {
         return await getToken();
       }
       return null;
-  // Set up Clerk JWT token injection for API requests
-  useEffect(() => {
-    setAuthTokenGetter(async () => {
-      if (!isSignedIn) return null;
-      try {
-        const token = await getToken();
-        return token;
-      } catch (error) {
-        console.error('Failed to get Clerk token:', error);
-        return null;
-      }
     });
   }, [isSignedIn, getToken]);
 
