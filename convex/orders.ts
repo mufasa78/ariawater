@@ -289,7 +289,7 @@ export const getByPaystackRef = query({
       .withIndex("by_paystackRef", (q) => q.eq("paystackRef", reference))
       .first();
     if (!order) return null;
-    if (customerId && order.customerId !== customerId) return null;
+    if (customerId && order.customerId && order.customerId !== customerId) return null;
     return order;
   },
 });

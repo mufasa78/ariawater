@@ -2,6 +2,7 @@
  * Lipana Payment Client for M-Pesa integration
  * API Documentation: https://lipana.africa/docs
  */
+import crypto from "crypto";
 
 export interface LipanaPaymentRequest {
   amount: number; // Amount in KES
@@ -149,7 +150,6 @@ export class LipanaClient {
     webhookSecret: string
   ): boolean {
     // Lipana uses HMAC SHA256 for webhook verification
-    const crypto = require("crypto");
     const expectedSignature = crypto
       .createHmac("sha256", webhookSecret)
       .update(payload)
