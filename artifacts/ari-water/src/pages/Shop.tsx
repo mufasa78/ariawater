@@ -219,13 +219,24 @@ export default function Shop() {
                     'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
                 );
               },
-              onError: () => {
-                // Order was placed; payment initiation failed — let them go to track
+              onError: (error: unknown) => {
+                const message =
+                  typeof error === 'object' &&
+                  error &&
+                  'message' in error &&
+                  typeof (error as { message?: unknown }).message === 'string'
+                    ? (error as { message: string }).message
+                    : 'M-Pesa prompt could not be sent.';
+
+                setMpesaStatus('failed');
+                setMpesaMessage(
+                  `${message} Your order was created; you can retry payment from the order tracker.`,
+                );
                 toast({
-                  title: 'Order placed!',
-                  description: 'M-Pesa prompt could not be sent. You can track your order using your ticket number.',
+                  variant: 'destructive',
+                  title: 'Payment could not start',
+                  description: message,
                 });
-                setLocation('/track?ticket=' + (order.ticketNumber || ''));
               },
             },
           );
