@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { clerkClient, requireAuth as clerkRequireAuth } from "@clerk/express";
+import { clerkClient } from "@clerk/express";
 
 export type Role = "admin" | "marketing" | "sales" | "accounting" | "customer";
 
@@ -25,16 +25,13 @@ declare global {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  clerkRequireAuth()(req, res, async (err?: any) => {
-    if (err || !req.auth?.userId) {
-      res.status(401).json({ error: "Authentication required" });
-      return;
-    }
+  if (!req.auth?.userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
 
-    try {
-      // Get user from Clerk (clerkClient is not a function, it's already the client)
-      const user = await clerkClient.users.getUser(req.auth.userId);
-      
+  clerkClient.users.getUser(req.auth.userId)
+    .then((user) => {
       // Extract role from publicMetadata (default to "customer")
       const role = (user.publicMetadata.role as Role) || "customer";
       const approved = user.publicMetadata.approved !== false; // default to true
@@ -49,11 +46,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
       };
 
       next();
-    } catch (error) {
-      console.error("Error fetching user from Clerk:", error);
+    })
+    .catch((error) => {
+      console.error("Error fetching user from Clerk in requireAuth:", error);
       res.status(500).json({ error: "Failed to authenticate user" });
-    }
-  });
+    });
 }
 
 export function requireApproved(req: Request, res: Response, next: NextFunction) {
