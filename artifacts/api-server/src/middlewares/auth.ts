@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from "express";
-import { clerkClient } from "@clerk/express";
 import { clerkClient, getAuth } from "@clerk/express";
 
 export type Role = "admin" | "marketing" | "sales" | "accounting" | "customer";
@@ -26,14 +25,12 @@ declare global {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.auth?.userId) {
   const userId = getAuth(req).userId;
   if (!userId) {
     res.status(401).json({ error: "Authentication required" });
     return;
   }
 
-  clerkClient.users.getUser(req.auth.userId)
   clerkClient.users.getUser(userId)
     .then((user) => {
       // Extract role from publicMetadata (default to "customer")
@@ -86,14 +83,12 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Optional auth middleware - sets req.user if valid token exists, but doesn't require it
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.auth?.userId) {
   const userId = getAuth(req).userId;
   if (!userId) {
     next();
     return;
   }
 
-  clerkClient.users.getUser(req.auth.userId)
   clerkClient.users.getUser(userId)
     .then((user) => {
       const role = (user.publicMetadata.role as Role) || "customer";
