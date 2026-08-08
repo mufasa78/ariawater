@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { clerkClient, requireAuth as clerkRequireAuth } from "@clerk/express";
+import { clerkClient, getAuth } from "@clerk/express";
 
 export type Role = "admin" | "marketing" | "sales" | "accounting" | "customer";
 
@@ -25,21 +25,19 @@ declare global {
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  clerkRequireAuth()(req, res, async (err?: any) => {
-    if (err || !req.auth?.userId) {
-      res.status(401).json({ error: "Authentication required" });
-      return;
-    }
+  const userId = getAuth(req).userId;
+  if (!userId) {
+    res.status(401).json({ error: "Authentication required" });
+    return;
+  }
 
-    try {
-      // Get user from Clerk (clerkClient is not a function, it's already the client)
-      const user = await clerkClient.users.getUser(req.auth.userId);
-      
+  clerkClient.users.getUser(userId)
+    .then((user) => {
       // Extract role from publicMetadata (default to "customer")
       const role = (user.publicMetadata.role as Role) || "customer";
       const approved = user.publicMetadata.approved !== false; // default to true
 
-      // Set req.user for compatibility with existing code
+      // Set req.user for compatibility with the existing route handlers.
       req.user = {
         userId: user.id,
         role,
@@ -49,11 +47,11 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
       };
 
       next();
-    } catch (error) {
-      console.error("Error fetching user from Clerk:", error);
+    })
+    .catch((error) => {
+      req.log?.error?.({ err: error }, "Error fetching user from Clerk");
       res.status(500).json({ error: "Failed to authenticate user" });
-    }
-  });
+    });
 }
 
 export function requireApproved(req: Request, res: Response, next: NextFunction) {
@@ -84,12 +82,13 @@ export function requireAdmin(req: Request, res: Response, next: NextFunction) {
 
 // Optional auth middleware - sets req.user if valid token exists, but doesn't require it
 export function optionalAuth(req: Request, res: Response, next: NextFunction) {
-  if (!req.auth?.userId) {
+  const userId = getAuth(req).userId;
+  if (!userId) {
     next();
     return;
   }
 
-  clerkClient.users.getUser(req.auth.userId)
+  clerkClient.users.getUser(userId)
     .then((user) => {
       const role = (user.publicMetadata.role as Role) || "customer";
       const approved = user.publicMetadata.approved !== false;
@@ -104,7 +103,7 @@ export function optionalAuth(req: Request, res: Response, next: NextFunction) {
       next();
     })
     .catch((error) => {
-      console.error("Error fetching user from Clerk in optionalAuth:", error);
+      req.log?.warn?.({ err: error }, "Error fetching user from Clerk in optionalAuth");
       next();
     });
 }
