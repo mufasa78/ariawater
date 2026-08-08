@@ -411,6 +411,10 @@ export interface PaymentInitInput {
 export interface PaymentInitResponse {
   authorizationUrl: string;
   reference: string;
+  /** @nullable */
+  amountKes?: number;
+  /** @nullable */
+  message?: string;
 }
 
 export interface PaymentVerifyInput {

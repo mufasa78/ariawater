@@ -62,6 +62,12 @@ export default function Shop() {
   const [customerName, setCustomerName] = useState(user?.fullName || '');
   const [customerEmail, setCustomerEmail] = useState(user?.primaryEmailAddress?.emailAddress || '');
 
+  // Calculate cart total (client-side for display, server will validate)
+  const cartSubtotalKes = items.reduce(
+    (sum, item) => sum + Math.round(Number(item.unitPriceKes) * Number(item.quantity)),
+    0,
+  );
+
   // Sync form fields when Clerk user loads
   useEffect(() => {
     if (user) {
@@ -76,8 +82,11 @@ export default function Shop() {
   const [mpesaStatus, setMpesaStatus] = useState<MpesaStatus>('idle');
   const [mpesaMessage, setMpesaMessage] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
+  const [orderTotalKes, setOrderTotalKes] = useState<number>(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 3;
 
   const createOrder = useCreateOrder();
   const initPayment = useInitializePayment();
@@ -103,6 +112,7 @@ export default function Shop() {
           onSuccess: (res) => {
             if (res.status === 'success') {
               setMpesaStatus('success');
+              setMpesaMessage('Payment completed successfully! Your order is confirmed.');
               if (pollRef.current) clearInterval(pollRef.current);
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
             } else if (res.status === 'failed') {
@@ -112,6 +122,17 @@ export default function Shop() {
               if (timeoutRef.current) clearTimeout(timeoutRef.current);
             }
             // status === 'pending' → keep polling
+          },
+          onError: (error) => {
+            console.error('Payment verification error:', error);
+            // Don't stop polling on network errors - might be transient
+            retryCountRef.current += 1;
+            if (retryCountRef.current >= MAX_RETRIES) {
+              setMpesaStatus('failed');
+              setMpesaMessage('Unable to verify payment status. Please check your orders page.');
+              if (pollRef.current) clearInterval(pollRef.current);
+              if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            }
           },
         },
       );
@@ -206,18 +227,19 @@ export default function Shop() {
         onSuccess: (order) => {
           clearCart();
           setTicketNumber(order.ticketNumber || '');
+          // Use server-calculated total from order
+          setOrderTotalKes(order.totalKes || 0);
 
           // Initiate Lipana M-Pesa STK push
           initPayment.mutate(
             { data: { orderId: order.id } },
             {
               onSuccess: (res) => {
-                  setMpesaRef(res.reference);
-                  setMpesaStatus('pending');
-                  const requestedAmount = res.amountKes ?? payableAmountKes;
-                  setMpesaMessage(
-                    `${(res as any).message || 'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.'} Amount requested: ${formatKes(requestedAmount)}.`,
-                    'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.',
+                setMpesaRef(res.reference);
+                setMpesaStatus('pending');
+                const requestedAmount = res.amountKes ?? orderTotalKes;
+                setMpesaMessage(
+                  `${(res as any).message || 'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.'} Amount requested: ${formatKes(requestedAmount)}.`,
                 );
               },
               onError: (error: unknown) => {
@@ -260,12 +282,6 @@ export default function Shop() {
       },
     );
   };
-
-  const cartSubtotalKes = items.reduce(
-    (sum, item) => sum + Math.round(Number(item.unitPriceKes) * Number(item.quantity)),
-    0,
-  );
-  const payableAmountKes = cartSubtotalKes;
 
   const isProcessing = createOrder.isPending || initPayment.isPending;
 
@@ -525,7 +541,7 @@ export default function Shop() {
                       <CardFooter className="p-5 bg-slate-50 flex-col gap-3">
                         <div className="w-full flex justify-between items-center">
                           <span className="font-medium text-slate-600 text-sm">Total to pay:</span>
-                          <span className="font-bold text-xl text-slate-900">{formatKes(payableAmountKes)}</span>
+                          <span className="font-bold text-xl text-slate-900">{formatKes(cartSubtotalKes)}</span>
                         </div>
                         <Button
                           className="w-full h-11 text-base font-semibold"
@@ -559,25 +575,25 @@ export default function Shop() {
       {/* ── M-Pesa STK Push Modal ─────────────────────────────────────────────── */}
       {mpesaStatus !== 'idle' && (
         <div
-          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4"
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
           role="dialog"
           aria-modal="true"
           aria-label="M-Pesa payment"
         >
-          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-auto overflow-hidden animate-in fade-in zoom-in duration-200">
             {mpesaStatus === 'pending' && (
-              <div className="p-8 text-center space-y-5">
+              <div className="p-6 sm:p-8 text-center space-y-5">
                 {/* M-Pesa icon */}
-                <div className="h-20 w-20 mx-auto bg-[#00A651]/10 rounded-full flex items-center justify-center">
-                  <Smartphone className="h-10 w-10 text-[#00A651]" />
+                <div className="h-16 w-16 sm:h-20 sm:w-20 mx-auto bg-[#00A651]/10 rounded-full flex items-center justify-center">
+                  <Smartphone className="h-8 w-8 sm:h-10 sm:w-10 text-[#00A651]" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-slate-900 mb-2">Check Your Phone</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-slate-900 mb-2">Check Your Phone</h3>
                   <p className="text-slate-600 text-sm leading-relaxed">
                     An M-Pesa payment prompt has been sent to{' '}
                     <strong className="text-slate-900">{phone}</strong>. Enter your M-Pesa PIN to
                     confirm the payment of{' '}
-                    <strong className="text-primary">{formatKes(payableAmountKes)}</strong>.
+                    <strong className="text-primary">{formatKes(orderTotalKes)}</strong>.
                   </p>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-sm text-slate-500 bg-slate-50 rounded-xl px-4 py-3">
@@ -603,12 +619,12 @@ export default function Shop() {
             )}
 
             {mpesaStatus === 'success' && (
-              <div className="p-8 text-center space-y-5">
-                <div className="h-20 w-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
-                  <CheckCircle2 className="h-10 w-10 text-green-600" />
+              <div className="p-6 sm:p-8 text-center space-y-5">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="h-8 w-8 sm:h-10 sm:w-10 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-green-700 mb-2">Payment Received!</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-green-700 mb-2">Payment Received!</h3>
                   <p className="text-slate-600 text-sm">
                     Your order is confirmed. We will begin processing it shortly.
                   </p>
@@ -622,7 +638,7 @@ ARI WATER - ORDER RECEIPT
 ==========================
 Order ID: ${mpesaRef}
 Date: ${new Date().toLocaleString()}
-Amount: KES ${totalKes.toLocaleString()}
+Amount: KES ${orderTotalKes.toLocaleString()}
 Payment Method: M-Pesa
 Status: PAID
 
@@ -660,19 +676,27 @@ Thank you for your order!
             )}
 
             {mpesaStatus === 'failed' && (
-              <div className="p-8 text-center space-y-5">
-                <div className="h-20 w-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
-                  <XCircle className="h-10 w-10 text-red-500" />
+              <div className="p-6 sm:p-8 text-center space-y-5">
+                <div className="h-16 w-16 sm:h-20 sm:w-20 mx-auto bg-red-100 rounded-full flex items-center justify-center">
+                  <XCircle className="h-8 w-8 sm:h-10 sm:w-10 text-red-600" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-bold text-red-700 mb-2">Payment Failed</h3>
-                  <p className="text-slate-600 text-sm leading-relaxed">{mpesaMessage}</p>
+                  <h3 className="text-lg sm:text-xl font-bold text-red-700 mb-2">Payment Failed</h3>
+                  <p className="text-slate-600 text-sm">{mpesaMessage}</p>
                 </div>
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3">
+                  <Button
+                    onClick={() => {
+                      setMpesaStatus('idle');
+                      setMpesaRef(null);
+                      setMpesaMessage('');
+                      retryCountRef.current = 0;
+                    }}
+                  >
+                    Try Again
+                  </Button>
                   <Button
                     variant="outline"
-                    size="sm"
-                    className="flex-1"
                     onClick={() => {
                       setMpesaStatus('idle');
                       setMpesaRef(null);
@@ -680,17 +704,6 @@ Thank you for your order!
                     }}
                   >
                     Track Order
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1"
-                    onClick={() => {
-                      setMpesaStatus('idle');
-                      setMpesaRef(null);
-                      setCheckoutStep('details');
-                    }}
-                  >
-                    Try Again
                   </Button>
                 </div>
               </div>
