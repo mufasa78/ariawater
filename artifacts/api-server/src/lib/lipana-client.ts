@@ -155,10 +155,12 @@ export class LipanaClient {
       .update(payload)
       .digest("hex");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    const received = Buffer.from(signature.trim(), "utf8");
+    const expected = Buffer.from(expectedSignature, "utf8");
+
+    if (received.length !== expected.length) return false;
+
+    return crypto.timingSafeEqual(received, expected);
   }
 
   /**
