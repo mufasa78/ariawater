@@ -23,8 +23,8 @@ router.post("/initialize", optionalAuth, async (req, res) => {
   const order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
   
-  // Only check ownership if user is authenticated (not guest)
-  if (req.user && !isAdmin && order.customerId !== req.user.userId){ res.status(403).json({ error: "Access denied" }); return; }
+  // Only check ownership if user is authenticated (not guest) and the order belongs to a customer
+  if (req.user && !isAdmin && order.customerId && order.customerId !== req.user.userId){ res.status(403).json({ error: "Access denied" }); return; }
 
   // Lipana M-Pesa Payment
   if (PAYMENT_PROVIDER === "lipana") {
