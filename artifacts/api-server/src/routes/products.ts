@@ -27,7 +27,7 @@ function mapProduct(p: Record<string, unknown>) {
     stockQuantity: p.stockQuantity,
     imageUrl: p.imageUrl ?? null,
     isActive: p.isActive,
-    category: p.category ?? null,
+    category: (p.category as string) ?? "general",
     createdAt: new Date(p._creationTime as number).toISOString(),
     vatClass: (p.vatClass as string | undefined) ?? "standard",
     kraItemCode: (p.kraItemCode as string | undefined) ?? null,
