@@ -399,6 +399,16 @@ router.get("/:paymentId/status", optionalAuth, async (req, res) => {
 
       if (!payment && !order) {
         req.log?.warn?.({ paymentId }, "Payment/order not found for status check");
+        // Return a failed status instead of 404 for pending references
+        if (paymentId.startsWith("pending-")) {
+          res.json({
+            success: false,
+            status: "failed",
+            orderId: null,
+            message: "Payment initiation failed. Please try again.",
+          });
+          return;
+        }
         res.status(404).json({ error: "Payment not found", code: "PAYMENT_NOT_FOUND" });
         return;
       }
