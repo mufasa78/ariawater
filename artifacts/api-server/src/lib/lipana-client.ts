@@ -146,19 +146,23 @@ export class LipanaClient {
    */
   verifyWebhookSignature(
     payload: string,
-    signature: string,
+    signature: string | undefined,
     webhookSecret: string
   ): boolean {
+    if (!signature) return false;
+
     // Lipana uses HMAC SHA256 for webhook verification
     const expectedSignature = crypto
       .createHmac("sha256", webhookSecret)
       .update(payload)
       .digest("hex");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
-    );
+    const received = Buffer.from(signature.trim(), "utf8");
+    const expected = Buffer.from(expectedSignature, "utf8");
+
+    if (received.length !== expected.length) return false;
+
+    return crypto.timingSafeEqual(received, expected);
   }
 
   /**
