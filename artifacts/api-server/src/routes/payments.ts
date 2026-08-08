@@ -81,6 +81,7 @@ router.post("/initialize", optionalAuth, async (req, res) => {
         res.json(InitializePaymentResponse.parse({
           authorizationUrl: "",
           reference: reference,
+          amountKes: Math.round(Number(order.totalKes)),
           message: paymentResult.message || "M-Pesa prompt could not be sent at this time. You can complete payment from your orders page.",
         }));
         return;
@@ -96,6 +97,7 @@ router.post("/initialize", optionalAuth, async (req, res) => {
       res.json(InitializePaymentResponse.parse({
         authorizationUrl: `mpesa://stk-push/${paymentResult.data.checkout_request_id}`,
         reference: paymentResult.data.checkout_request_id,
+        amountKes: Math.round(Number(order.totalKes)),
         message: paymentResult.data.customer_message,
       }));
       return;

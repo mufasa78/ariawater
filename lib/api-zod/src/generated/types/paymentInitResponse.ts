@@ -9,4 +9,6 @@
 export interface PaymentInitResponse {
   authorizationUrl: string;
   reference: string;
+  amountKes?: number;
+  message?: string;
 }
