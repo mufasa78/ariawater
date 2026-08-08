@@ -336,13 +336,23 @@ router.get("/:reference/status", optionalAuth, async (req, res) => {
   if (PAYMENT_PROVIDER === "lipana") {
     try {
       // Find order by reference - this is our source of truth
+      // Don't filter by customerId for status checks to allow polling
       const order = await convex.query(api.orders.getByPaystackRef, {
         reference,
-        customerId: isAdmin ? undefined : (req.user?.userId as any),
       }) as Record<string, unknown> | null;
 
       if (!order) {
         req.log?.warn?.({ reference }, "Order not found for status check");
+        // If reference starts with "pending-", it means STK initiation failed
+        if (reference.startsWith("pending-")) {
+          res.json({
+            success: false,
+            status: "failed",
+            orderId: null,
+            message: "Payment initiation failed. Please try again.",
+          });
+          return;
+        }
         res.status(404).json({ error: "Payment not found" });
         return;
       }
