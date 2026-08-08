@@ -23,6 +23,8 @@ import {
   CheckCircle2,
   Smartphone,
   XCircle,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
 import { Link, useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
@@ -56,7 +58,7 @@ export default function Shop() {
   const [deliveryAddress, setDeliveryAddress] = useState('');
   const [phone, setPhone] = useState(user?.primaryPhoneNumber?.phoneNumber || '');
   const [notes, setNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState<'mpesa'>('mpesa');
+  const [paymentMethod, setPaymentMethod] = useState<'mpesa' | 'pay_later'>('mpesa');
   
   // Guest checkout fields
   const [customerName, setCustomerName] = useState(user?.fullName || '');
@@ -229,7 +231,7 @@ export default function Shop() {
           deliveryAddress,
           phone,
           notes,
-          paymentMethod: 'mpesa',
+          paymentMethod: paymentMethod === 'mpesa' ? 'mpesa' : 'pay_later',
           items: items.map((item) => ({
             productId: item.productId,
             quantity: item.quantity,
@@ -243,39 +245,52 @@ export default function Shop() {
           // Use server-calculated total from order
           setOrderTotalKes(order.totalKes || 0);
 
-          // Initiate Lipana M-Pesa STK push
-          initPayment.mutate(
-            { data: { orderId: order.id } },
-            {
-              onSuccess: (res) => {
-                setMpesaRef(res.reference);
-                setMpesaStatus('pending');
-                const requestedAmount = res.amountKes ?? orderTotalKes;
-                setMpesaMessage(
-                  `${(res as any).message || 'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.'} Amount requested: ${formatKes(requestedAmount)}.`,
-                );
-              },
-              onError: (error: unknown) => {
-                const message =
-                  typeof error === 'object' &&
-                  error &&
-                  'message' in error &&
-                  typeof (error as { message?: unknown }).message === 'string'
-                    ? (error as { message: string }).message
-                    : 'M-Pesa prompt could not be sent.';
+          // Only initiate payment if M-Pesa is selected
+          if (paymentMethod === 'mpesa') {
+            // Initiate Lipana M-Pesa STK push
+            initPayment.mutate(
+              { data: { orderId: order.id } },
+              {
+                onSuccess: (res) => {
+                  setMpesaRef(res.reference);
+                  setMpesaStatus('pending');
+                  const requestedAmount = res.amountKes ?? orderTotalKes;
+                  setMpesaMessage(
+                    `${(res as any).message || 'An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.'} Amount requested: ${formatKes(requestedAmount)}.`,
+                  );
+                },
+                onError: (error: unknown) => {
+                  const message =
+                    typeof error === 'object' &&
+                    error &&
+                    'message' in error &&
+                    typeof (error as { message?: unknown }).message === 'string'
+                      ? (error as { message: string }).message
+                      : 'M-Pesa prompt could not be sent.';
 
-                setMpesaStatus('failed');
-                setMpesaMessage(
-                  `${message} Your order was created; you can retry payment from the order tracker.`,
-                );
-                toast({
-                  variant: 'destructive',
-                  title: 'Payment could not start',
-                  description: message,
-                });
+                  setMpesaStatus('failed');
+                  setMpesaMessage(
+                    `${message} Your order was created; you can retry payment from the order tracker.`,
+                  );
+                  toast({
+                    variant: 'destructive',
+                    title: 'Payment could not start',
+                    description: message,
+                  });
+                },
               },
-            },
-          );
+            );
+          } else {
+            // Pay later - just show success message
+            setMpesaStatus('success');
+            setMpesaMessage(
+              `Order placed successfully! Your ticket number is ${order.ticketNumber}. You can pay later from your orders page.`,
+            );
+            toast({
+              title: 'Order placed successfully',
+              description: `Ticket: ${order.ticketNumber}. You can pay later.`,
+            });
+          }
         },
         onError: (error: unknown) => {
           const errorMessage =
@@ -541,12 +556,43 @@ export default function Shop() {
                             <span className="bg-primary/10 text-primary h-5 w-5 rounded-full flex items-center justify-center text-xs">{!user ? '3' : '2'}</span>
                             Payment Method
                           </h3>
-                          <div className="flex items-center space-x-3 border p-3.5 rounded-xl border-primary bg-primary/5">
-                            <Smartphone className="h-4 w-4 shrink-0 text-primary" />
-                            <div className="flex-1">
-                              <p className="font-medium text-sm text-slate-900">M-Pesa</p>
-                              <p className="text-xs text-slate-500">STK push to your phone</p>
-                            </div>
+                          <div className="space-y-2">
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod('mpesa')}
+                              className={`flex items-center space-x-3 border p-3.5 rounded-xl w-full transition-colors ${
+                                paymentMethod === 'mpesa'
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <Smartphone className="h-4 w-4 shrink-0 text-primary" />
+                              <div className="flex-1 text-left">
+                                <p className="font-medium text-sm text-slate-900">M-Pesa</p>
+                                <p className="text-xs text-slate-500">STK push to your phone</p>
+                              </div>
+                              {paymentMethod === 'mpesa' && (
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPaymentMethod('pay_later')}
+                              className={`flex items-center space-x-3 border p-3.5 rounded-xl w-full transition-colors ${
+                                paymentMethod === 'pay_later'
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-slate-200 hover:border-slate-300'
+                              }`}
+                            >
+                              <Clock className="h-4 w-4 shrink-0 text-primary" />
+                              <div className="flex-1 text-left">
+                                <p className="font-medium text-sm text-slate-900">Pay Later</p>
+                                <p className="text-xs text-slate-500">Pay after delivery or from orders page</p>
+                              </div>
+                              {paymentMethod === 'pay_later' && (
+                                <CheckCircle className="h-4 w-4 text-primary" />
+                              )}
+                            </button>
                           </div>
                         </div>
                       </CardContent>
