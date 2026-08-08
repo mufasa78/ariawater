@@ -58,9 +58,13 @@ router.post("/initialize", optionalAuth, async (req, res) => {
       // Build webhook callback URL: use explicit env var, else derive from Replit domain
       const webhookUrl =
         process.env.LIPANA_WEBHOOK_URL ||
-        (process.env.REPLIT_DEV_DOMAIN
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/payments/webhook/lipana`
-          : undefined);
+        (process.env.VERCEL_URL
+          ? `https://${process.env.VERCEL_URL}/api/payments/webhook/lipana`
+          : process.env.FRONTEND_URL
+            ? `${process.env.FRONTEND_URL.replace(/\/$/, '')}/api/payments/webhook/lipana`
+            : process.env.REPLIT_DEV_DOMAIN
+              ? `https://${process.env.REPLIT_DEV_DOMAIN}/api/payments/webhook/lipana`
+              : undefined);
 
       const paymentResult = await lipana.initiatePayment({
         amount: Math.round(order.totalKes as number),

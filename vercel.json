@@ -2,6 +2,12 @@
   "buildCommand": "pnpm run typecheck:libs && pnpm --filter @workspace/api-server run build && pnpm --filter @workspace/ari-water run build",
   "outputDirectory": "artifacts/ari-water/dist/public",
   "framework": "vite",
+  "rewrites": [
+    {
+      "source": "/((?!api(?:/|$)).*)",
+      "destination": "/index.html"
+    }
+  ],
   "functions": {
     "api/index.js": {
       "memory": 1024,
