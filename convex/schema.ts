@@ -39,7 +39,7 @@ export default defineSchema({
     customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
     customerName: v.optional(v.string()), // Guest customer name
     customerEmail: v.optional(v.string()), // Guest customer email
-    orderNumber: v.string(), // Human-readable order number, e.g. ARI-20260808-001
+    orderNumber: v.optional(v.string()), // Human-readable order number, e.g. ARI-20260808-001
     status: v.union(
       v.literal("received"),
       v.literal("processing"),
