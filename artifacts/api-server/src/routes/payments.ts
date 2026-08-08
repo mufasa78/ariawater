@@ -97,7 +97,12 @@ router.post("/initialize", optionalAuth, async (req, res) => {
         if (!useFallback) {
           await convex.mutation(api.payments.markFailed, { id: paymentId as any });
         } else {
-          await convex.mutation(api.orders.updatePayment, { id: parsed.data.orderId as any, paymentStatus: "failed" });
+          // Store the pending reference in order.paystackRef so status endpoint can find it
+          await convex.mutation(api.orders.updatePayment, { 
+            id: parsed.data.orderId as any, 
+            paystackRef: paymentId,
+            paymentStatus: "failed" 
+          });
         }
         res.json(InitializePaymentResponse.parse({
           authorizationUrl: "",
@@ -116,12 +121,14 @@ router.post("/initialize", optionalAuth, async (req, res) => {
           status: "initiated",
         });
       } else {
-        // Fallback: store in order.paystackRef
+        // Fallback: store Lipana transactionId in order.paystackRef
         await convex.mutation(api.orders.updatePayment, {
           id: parsed.data.orderId as any,
           paystackRef: paymentResult.data.transactionId,
           paymentStatus: "pending",
         });
+        // Return the Lipana transactionId as reference for polling (not the pending reference)
+        paymentId = paymentResult.data.transactionId;
       }
 
       req.log?.info?.({ orderId: parsed.data.orderId, paymentId, transactionId: paymentResult.data.transactionId, useFallback }, "Lipana STK initiated successfully");
