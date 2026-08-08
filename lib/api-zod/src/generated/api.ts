@@ -263,7 +263,7 @@ export const CreateOrderBody = zod.object({
   "deliveryAddress": zod.string(),
   "phone": zod.string(),
   "notes": zod.string().nullish(),
-  "paymentMethod": zod.enum(['mpesa']).optional(),
+  "paymentMethod": zod.enum(['mpesa', 'pay_later']).optional(),
   "items": zod.array(zod.object({
   "productId": zod.string(),
   "quantity": zod.number().min(1)
