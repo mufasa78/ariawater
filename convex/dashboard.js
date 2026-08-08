@@ -54,10 +54,13 @@ export const recentOrders = query({
             let customerEmail = order.customerEmail ?? null;
             // If customerId exists, fetch customer details
             if (order.customerId) {
-                const customer = await ctx.db.get(order.customerId);
-                if (customer) {
-                    customerName = customer.name;
-                    customerEmail = customer.email;
+                const userId = ctx.db.normalizeId("users", order.customerId);
+                if (userId) {
+                    const customer = await ctx.db.get(userId);
+                    if (customer) {
+                        customerName = customer.name;
+                        customerEmail = customer.email;
+                    }
                 }
             }
             const items = await ctx.db

@@ -5,6 +5,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth as useClerkAuth, useUser } from '@clerk/clerk-react';
+import { setAuthTokenGetter } from '@workspace/api-client-react';
 
 export interface User {
   userId: string;
@@ -24,9 +25,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function ClerkAuthWrapper({ children }: { children: React.ReactNode }) {
-  const { isSignedIn, isLoaded } = useClerkAuth();
+  const { isSignedIn, isLoaded, getToken } = useClerkAuth();
   const { user: clerkUser } = useUser();
   const [user, setUser] = useState<User | null>(null);
+
+  // Set up Clerk JWT token injection for API requests
+  useEffect(() => {
+    setAuthTokenGetter(async () => {
+      if (!isSignedIn) return null;
+      try {
+        const token = await getToken();
+        return token;
+      } catch (error) {
+        console.error('Failed to get Clerk token:', error);
+        return null;
+      }
+    });
+  }, [isSignedIn, getToken]);
 
   // Map Clerk user to our User interface
   useEffect(() => {

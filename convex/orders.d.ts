@@ -1,17 +1,18 @@
 export declare const listByCustomer: import("convex/server").RegisteredQuery<"public", {
     limit?: number;
     page?: number;
-    customerId: import("convex/values").GenericId<"users">;
+    customerId: string;
 }, Promise<{
     orders: {
         _id: import("convex/values").GenericId<"orders">;
         _creationTime: number;
-        customerId?: import("convex/values").GenericId<"users">;
+        customerId?: string;
         customerName?: string;
         customerEmail?: string;
         notes?: string;
         paymentMethod?: string;
         paystackRef?: string;
+        ticketNumber?: string;
         phone: string;
         status: "received" | "processing" | "dispatched" | "delivered";
         totalKes: number;
@@ -34,10 +35,11 @@ export declare const listAll: import("convex/server").RegisteredQuery<"public", 
         itemCount: number;
         _id: import("convex/values").GenericId<"orders">;
         _creationTime: number;
-        customerId?: import("convex/values").GenericId<"users">;
+        customerId?: string;
         notes?: string;
         paymentMethod?: string;
         paystackRef?: string;
+        ticketNumber?: string;
         phone: string;
         status: "received" | "processing" | "dispatched" | "delivered";
         totalKes: number;
@@ -70,16 +72,17 @@ export declare const get: import("convex/server").RegisteredQuery<"public", {
         _id: import("convex/values").GenericId<"reviews">;
         _creationTime: number;
         comment?: string;
-        customerId: import("convex/values").GenericId<"users">;
+        customerId: string;
         orderId: import("convex/values").GenericId<"orders">;
         rating: number;
     };
     _id: import("convex/values").GenericId<"orders">;
     _creationTime: number;
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     notes?: string;
     paymentMethod?: string;
     paystackRef?: string;
+    ticketNumber?: string;
     phone: string;
     status: "received" | "processing" | "dispatched" | "delivered";
     totalKes: number;
@@ -88,7 +91,7 @@ export declare const get: import("convex/server").RegisteredQuery<"public", {
     updatedAt: number;
 }>>;
 export declare const create: import("convex/server").RegisteredMutation<"public", {
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     customerName?: string;
     customerEmail?: string;
     notes?: string;
@@ -102,12 +105,13 @@ export declare const create: import("convex/server").RegisteredMutation<"public"
 }, Promise<{
     _id: import("convex/values").GenericId<"orders">;
     _creationTime: number;
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     customerName?: string;
     customerEmail?: string;
     notes?: string;
     paymentMethod?: string;
     paystackRef?: string;
+    ticketNumber?: string;
     phone: string;
     status: "received" | "processing" | "dispatched" | "delivered";
     totalKes: number;
@@ -121,12 +125,13 @@ export declare const updateStatus: import("convex/server").RegisteredMutation<"p
 }, Promise<{
     _id: import("convex/values").GenericId<"orders">;
     _creationTime: number;
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     customerName?: string;
     customerEmail?: string;
     notes?: string;
     paymentMethod?: string;
     paystackRef?: string;
+    ticketNumber?: string;
     phone: string;
     status: "received" | "processing" | "dispatched" | "delivered";
     totalKes: number;
@@ -141,12 +146,13 @@ export declare const updatePayment: import("convex/server").RegisteredMutation<"
 }, Promise<{
     _id: import("convex/values").GenericId<"orders">;
     _creationTime: number;
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     customerName?: string;
     customerEmail?: string;
     notes?: string;
     paymentMethod?: string;
     paystackRef?: string;
+    ticketNumber?: string;
     phone: string;
     status: "received" | "processing" | "dispatched" | "delivered";
     totalKes: number;
@@ -155,17 +161,18 @@ export declare const updatePayment: import("convex/server").RegisteredMutation<"
     updatedAt: number;
 }>>;
 export declare const getByPaystackRef: import("convex/server").RegisteredQuery<"public", {
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     reference: string;
 }, Promise<{
     _id: import("convex/values").GenericId<"orders">;
     _creationTime: number;
-    customerId?: import("convex/values").GenericId<"users">;
+    customerId?: string;
     customerName?: string;
     customerEmail?: string;
     notes?: string;
     paymentMethod?: string;
     paystackRef?: string;
+    ticketNumber?: string;
     phone: string;
     status: "received" | "processing" | "dispatched" | "delivered";
     totalKes: number;

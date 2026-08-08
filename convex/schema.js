@@ -27,7 +27,9 @@ export default defineSchema({
         .index("by_sku", ["sku"])
         .index("by_active", ["isActive"]),
     orders: defineTable({
-        customerId: v.id("users"),
+        customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
+        customerName: v.optional(v.string()), // Guest customer name
+        customerEmail: v.optional(v.string()), // Guest customer email
         status: v.union(v.literal("received"), v.literal("processing"), v.literal("dispatched"), v.literal("delivered")),
         totalKes: v.number(),
         deliveryAddress: v.string(),
@@ -36,11 +38,13 @@ export default defineSchema({
         paymentMethod: v.optional(v.string()),
         paymentStatus: v.union(v.literal("pending"), v.literal("completed"), v.literal("failed")),
         paystackRef: v.optional(v.string()),
+        ticketNumber: v.optional(v.string()),
         updatedAt: v.number(),
     })
         .index("by_customer", ["customerId"])
         .index("by_status", ["status"])
-        .index("by_paystackRef", ["paystackRef"]),
+        .index("by_paystackRef", ["paystackRef"])
+        .index("by_ticketNumber", ["ticketNumber"]),
     orderItems: defineTable({
         orderId: v.id("orders"),
         productId: v.id("products"),
@@ -49,7 +53,7 @@ export default defineSchema({
     }).index("by_order", ["orderId"]),
     reviews: defineTable({
         orderId: v.id("orders"),
-        customerId: v.id("users"),
+        customerId: v.string(), // supports Clerk strings and old Convex IDs
         rating: v.number(),
         comment: v.optional(v.string()),
     })
@@ -64,4 +68,18 @@ export default defineSchema({
         .index("by_token", ["token"])
         .index("by_email", ["email"])
         .index("by_expiresAt", ["expiresAt"]),
+    tickets: defineTable({
+        orderId: v.id("orders"),
+        ticketNumber: v.string(),
+        status: v.union(v.literal("open"), v.literal("resolved"), v.literal("closed")),
+        messages: v.array(v.object({
+            sender: v.union(v.literal("customer"), v.literal("support"), v.literal("system")),
+            text: v.string(),
+            timestamp: v.number(),
+        })),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+    }).index("by_order", ["orderId"])
+        .index("by_ticketNumber", ["ticketNumber"])
+        .index("by_status", ["status"]),
 });

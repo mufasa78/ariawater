@@ -4,7 +4,7 @@ import { ConvexError } from "convex/values";
 // ── Queries ───────────────────────────────────────────────────────────────────
 export const listByCustomer = query({
     args: {
-        customerId: v.id("users"),
+        customerId: v.string(), // supports both Clerk strings and old Convex IDs
         page: v.optional(v.number()),
         limit: v.optional(v.number()),
     },
@@ -38,12 +38,15 @@ export const listAll = query({
         const enriched = await Promise.all(orders.map(async (order) => {
             let customerName = order.customerName ?? null;
             let customerEmail = order.customerEmail ?? null;
-            // If customerId exists, fetch customer details
+            // If customerId exists and is a valid users table ID, fetch customer details
             if (order.customerId) {
-                const customer = await ctx.db.get(order.customerId);
-                if (customer) {
-                    customerName = customer.name;
-                    customerEmail = customer.email;
+                const userId = ctx.db.normalizeId("users", order.customerId);
+                if (userId) {
+                    const customer = await ctx.db.get(userId);
+                    if (customer) {
+                        customerName = customer.name;
+                        customerEmail = customer.email;
+                    }
                 }
             }
             const items = await ctx.db
@@ -68,12 +71,15 @@ export const get = query({
             return null;
         let customerName = order.customerName ?? null;
         let customerEmail = order.customerEmail ?? null;
-        // If customerId exists, fetch customer details
+        // If customerId exists and is a valid users table ID, fetch customer details
         if (order.customerId) {
-            const customer = await ctx.db.get(order.customerId);
-            if (customer) {
-                customerName = customer.name;
-                customerEmail = customer.email;
+            const userId = ctx.db.normalizeId("users", order.customerId);
+            if (userId) {
+                const customer = await ctx.db.get(userId);
+                if (customer) {
+                    customerName = customer.name;
+                    customerEmail = customer.email;
+                }
             }
         }
         const items = await ctx.db
@@ -107,7 +113,7 @@ export const get = query({
 // ── Mutations ─────────────────────────────────────────────────────────────────
 export const create = mutation({
     args: {
-        customerId: v.optional(v.id("users")), // Optional for guest orders
+        customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
         customerName: v.optional(v.string()), // Guest customer name
         customerEmail: v.optional(v.string()), // Guest customer email
         deliveryAddress: v.string(),
@@ -143,6 +149,10 @@ export const create = mutation({
             });
         }
         const now = Date.now();
+        // Generate a simple ticket number for tracking
+        const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+        const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+        const ticketNumber = `AW-${datePrefix}-${randomSuffix}`;
         const orderId = await ctx.db.insert("orders", {
             customerId,
             customerName,
@@ -154,6 +164,7 @@ export const create = mutation({
             notes,
             paymentMethod,
             paymentStatus: "pending",
+            ticketNumber,
             updatedAt: now,
         });
         for (const item of resolvedItems) {
@@ -170,6 +181,20 @@ export const create = mutation({
                 });
             }
         }
+        await ctx.db.insert("tickets", {
+            orderId,
+            ticketNumber,
+            status: "open",
+            messages: [
+                {
+                    sender: "system",
+                    text: `Ticket created for order tracking.`,
+                    timestamp: now,
+                }
+            ],
+            createdAt: now,
+            updatedAt: now,
+        });
         return ctx.db.get(orderId);
     },
 });
@@ -209,7 +234,7 @@ export const updatePayment = mutation({
 export const getByPaystackRef = query({
     args: {
         reference: v.string(),
-        customerId: v.optional(v.id("users")),
+        customerId: v.optional(v.string()),
     },
     handler: async (ctx, { reference, customerId }) => {
         const order = await ctx.db
@@ -218,7 +243,7 @@ export const getByPaystackRef = query({
             .first();
         if (!order)
             return null;
-        if (customerId && order.customerId !== customerId)
+        if (customerId && order.customerId && order.customerId !== customerId)
             return null;
         return order;
     },
