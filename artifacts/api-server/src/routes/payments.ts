@@ -54,12 +54,18 @@ router.post("/initialize", optionalAuth, async (req, res) => {
       }
 
       const formattedPhone = LipanaClient.formatPhoneNumber(phoneNumber);
-      const reference = `ARI-${parsed.data.orderId}-${Date.now()}`;
       const orderTotal = Math.round(order.totalKes as number);
+
+      // Validate minimum amount (Ksh 10)
+      if (orderTotal < 10) {
+        req.log?.warn?.({ orderId: parsed.data.orderId, amount: orderTotal }, "Amount below minimum Ksh 10");
+        res.status(400).json({ error: "Minimum transaction amount is Ksh 10" });
+        return;
+      }
 
       req.log?.info?.({ orderId: parsed.data.orderId, phone: formattedPhone, amount: orderTotal }, "Initiating Lipana STK push");
 
-      // Build webhook callback URL: use explicit env var, else derive from Replit domain
+      // Build webhook callback URL
       const webhookUrl =
         process.env.LIPANA_WEBHOOK_URL ||
         (process.env.VERCEL_URL
@@ -79,48 +85,43 @@ router.post("/initialize", optionalAuth, async (req, res) => {
       // Create payment record BEFORE initiating STK
       await convex.mutation(api.orders.updatePayment, {
         id: parsed.data.orderId as any,
-        paystackRef: reference,
+        paystackRef: `pending-${Date.now()}`,
         paymentStatus: "pending",
       });
 
-      req.log?.info?.({ orderId: parsed.data.orderId, reference }, "Payment record created as pending");
+      req.log?.info?.({ orderId: parsed.data.orderId }, "Payment record created as pending");
 
       const paymentResult = await lipana.initiatePayment({
+        phone: formattedPhone,
         amount: orderTotal,
-        phone_number: formattedPhone,
-        account_reference: reference,
-        transaction_desc: `Ari Water Order #${parsed.data.orderId}`,
-        callback_url: webhookUrl,
       });
 
       if (!paymentResult.success || !paymentResult.data) {
-        // Payment provider unreachable or rejected — order is already created with pending status.
-        // Return a 200 with a degraded payload so the client can show a "pay later" UX
-        // rather than treating this as a hard error.
+        // Payment provider unreachable or rejected
         req.log?.warn?.({ orderId: parsed.data.orderId, message: paymentResult.message }, "Lipana STK initiation failed");
         res.json(InitializePaymentResponse.parse({
           authorizationUrl: "",
-          reference: reference,
+          reference: `pending-${Date.now()}`,
           amountKes: orderTotal,
           message: paymentResult.message || "M-Pesa prompt could not be sent at this time. You can complete payment from your orders page.",
         }));
         return;
       }
 
-      // Update order with Lipana transaction ID
+      // Update order with Lipana transaction ID (checkoutRequestID)
       await convex.mutation(api.orders.updatePayment, {
         id: parsed.data.orderId as any,
-        paystackRef: paymentResult.data.checkout_request_id,
+        paystackRef: paymentResult.data.checkoutRequestID,
         paymentStatus: "pending",
       });
 
-      req.log?.info?.({ orderId: parsed.data.orderId, checkoutRequestId: paymentResult.data.checkout_request_id }, "Lipana STK initiated successfully");
+      req.log?.info?.({ orderId: parsed.data.orderId, checkoutRequestID: paymentResult.data.checkoutRequestID }, "Lipana STK initiated successfully");
 
       res.json(InitializePaymentResponse.parse({
-        authorizationUrl: `mpesa://stk-push/${paymentResult.data.checkout_request_id}`,
-        reference: paymentResult.data.checkout_request_id,
+        authorizationUrl: `mpesa://stk-push/${paymentResult.data.checkoutRequestID}`,
+        reference: paymentResult.data.checkoutRequestID,
         amountKes: orderTotal,
-        message: paymentResult.data.customer_message,
+        message: paymentResult.data.message,
       }));
       return;
     } catch (error) {
@@ -274,24 +275,26 @@ router.post("/webhook/lipana", async (req, res) => {
     }
 
     const webhookData = req.body;
-    const checkoutRequestId = webhookData.checkout_request_id;
+    const checkoutRequestID = webhookData.data?.checkoutRequestID;
+    const transactionId = webhookData.data?.transactionId;
+    const event = webhookData.event;
 
-    req.log?.info?.({ checkoutRequestId, event: webhookData.event }, "Received Lipana webhook");
+    req.log?.info?.({ checkoutRequestID, transactionId, event }, "Received Lipana webhook");
 
-    // Find order by payment reference
+    // Find order by payment reference (checkoutRequestID)
     const order = await convex.query(api.orders.getByPaystackRef, {
-      reference: checkoutRequestId,
+      reference: checkoutRequestID,
     }) as Record<string, unknown> | null;
 
     if (!order) {
-      req.log?.warn?.({ checkoutRequestId }, "Order not found for webhook");
+      req.log?.warn?.({ checkoutRequestID }, "Order not found for webhook");
       res.status(404).json({ error: "Order not found" });
       return;
     }
 
     // IDEMPOTENCY CHECK: If order is already completed, return success
     if (order.paymentStatus === "completed") {
-      req.log?.info?.({ orderId: order._id, checkoutRequestId }, "Order already completed, skipping webhook");
+      req.log?.info?.({ orderId: order._id, checkoutRequestID }, "Order already completed, skipping webhook");
       res.json({ success: true, message: "Webhook processed successfully (idempotent)" });
       return;
     }
@@ -299,12 +302,12 @@ router.post("/webhook/lipana", async (req, res) => {
     // Update payment status based on webhook event
     let paymentStatus: "pending" | "completed" | "failed" = "pending";
     
-    if (webhookData.event === "payment.success" || webhookData.result_code === "0") {
+    if (event === "payment.success" || webhookData.data?.status === "success") {
       paymentStatus = "completed";
-      req.log?.info?.({ orderId: order._id, checkoutRequestId }, "Payment completed via webhook");
-    } else if (webhookData.event === "payment.failed" || webhookData.result_code !== "0") {
+      req.log?.info?.({ orderId: order._id, checkoutRequestID, transactionId }, "Payment completed via webhook");
+    } else if (event === "payment.failed" || webhookData.data?.status === "failed") {
       paymentStatus = "failed";
-      req.log?.info?.({ orderId: order._id, checkoutRequestId, resultDesc: webhookData.result_desc }, "Payment failed via webhook");
+      req.log?.info?.({ orderId: order._id, checkoutRequestID, transactionId }, "Payment failed via webhook");
     }
 
     await convex.mutation(api.orders.updatePayment, {
