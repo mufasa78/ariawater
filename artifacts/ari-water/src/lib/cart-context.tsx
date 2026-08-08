@@ -71,8 +71,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setItems([]);
   };
 
-  const totalKes = items.reduce((sum, item) => sum + item.unitPriceKes * item.quantity, 0);
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalKes = items.reduce(
+    (sum, item) => sum + Math.round(Number(item.unitPriceKes) * Number(item.quantity)),
+    0,
+  );
+  const totalItems = items.reduce(
+    (sum, item) => sum + Math.max(0, Math.floor(Number(item.quantity) || 0)),
+    0,
+  );
 
   return (
     <CartContext.Provider

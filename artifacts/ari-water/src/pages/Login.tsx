@@ -39,6 +39,8 @@ export default function Login() {
             path="/login"
             signUpUrl="/sign-up"
             afterSignInUrl="/login"
+            fallbackRedirectUrl="/admin"
+            forceRedirectUrl="/admin"
             appearance={{
               elements: {
                 rootBox: 'mx-auto',

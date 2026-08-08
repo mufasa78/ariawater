@@ -1,55 +1,37 @@
 /**
  * Lipana Payment Client for M-Pesa integration
- * API Documentation: https://lipana.africa/docs
+ * Official API Documentation: https://lipana.dev
  */
 import crypto from "crypto";
 
 export interface LipanaPaymentRequest {
-  amount: number; // Amount in KES
-  phone_number: string; // Format: 254712345678
-  account_reference: string; // Your order reference
-  transaction_desc?: string; // Optional description
-  callback_url?: string; // Optional callback URL
+  phone: string; // Format: +254712345678 or 254712345678
+  amount: number; // Amount in KES, minimum 10
 }
 
 export interface LipanaPaymentResponse {
   success: boolean;
   message: string;
   data?: {
-    checkout_request_id: string;
-    merchant_request_id: string;
-    response_code: string;
-    response_description: string;
-    customer_message: string;
-  };
-  error?: string;
-}
-
-export interface LipanaPaymentStatus {
-  success: boolean;
-  data?: {
-    checkout_request_id: string;
-    result_code: string;
-    result_desc: string;
-    amount?: number;
-    mpesa_receipt_number?: string;
-    transaction_date?: string;
-    phone_number?: string;
+    transactionId: string;
+    status: string;
+    checkoutRequestID: string;
+    message: string;
   };
   error?: string;
 }
 
 export interface LipanaWebhookPayload {
-  event: string; // payment.success, payment.failed, payment.pending
-  checkout_request_id: string;
-  merchant_request_id: string;
-  amount: number;
-  phone_number: string;
-  mpesa_receipt_number?: string;
-  transaction_date?: string;
-  result_code: string;
-  result_desc: string;
-  account_reference: string;
+  event: string; // payment.success, payment.failed
+  data: {
+    transactionId: string;
+    amount: number;
+    currency: string;
+    status: string;
+    phone: string;
+    checkoutRequestID: string;
+    timestamp: string;
+  };
 }
 
 export class LipanaClient {
@@ -65,18 +47,22 @@ export class LipanaClient {
 
   /**
    * Initialize M-Pesa STK Push payment
+   * Official endpoint: POST /api/transactions/push-stk
    */
   async initiatePayment(
     request: LipanaPaymentRequest
   ): Promise<LipanaPaymentResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/payments/stk-push`, {
+      const response = await fetch(`${this.baseUrl}/api/transactions/push-stk`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${this.secretKey}`,
+          "x-api-key": this.secretKey,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(request),
+        body: JSON.stringify({
+          phone: request.phone,
+          amount: request.amount,
+        }),
       });
 
       const data = await response.json();
@@ -91,7 +77,7 @@ export class LipanaClient {
 
       return {
         success: true,
-        message: "Payment initiated successfully",
+        message: data.message || "Payment initiated successfully",
         data: (data as any).data,
       };
     } catch (error) {
@@ -143,6 +129,7 @@ export class LipanaClient {
 
   /**
    * Verify webhook signature
+   * Uses X-Lipana-Signature header
    */
   verifyWebhookSignature(
     payload: string,
@@ -162,7 +149,7 @@ export class LipanaClient {
   }
 
   /**
-   * Format phone number to Lipana format (254XXXXXXXXX)
+   * Format phone number to Lipana format (+254XXXXXXXXX)
    */
   static formatPhoneNumber(phone: string): string {
     // Remove any spaces, dashes, or plus signs
@@ -178,7 +165,8 @@ export class LipanaClient {
       cleaned = "254" + cleaned;
     }
 
-    return cleaned;
+    // Add + prefix for Lipana format
+    return "+" + cleaned;
   }
 
   /**
@@ -186,8 +174,8 @@ export class LipanaClient {
    */
   static isValidKenyanPhone(phone: string): boolean {
     const formatted = LipanaClient.formatPhoneNumber(phone);
-    // Kenyan numbers: 254 + 9 digits (7XX, 1XX, etc.)
-    return /^254[17]\d{8}$/.test(formatted);
+    // Kenyan numbers: +254 + 9 digits (7XX, 1XX, etc.)
+    return /^\+254[17]\d{8}$/.test(formatted);
   }
 }
 
@@ -201,10 +189,15 @@ export function getLipanaClient(): LipanaClient {
       throw new Error("LIPANA_SECRET_KEY environment variable is not set");
     }
 
-    // Use live API when LIPANA_PRODUCTION=true OR when running in production
-    const isProduction =
-      process.env.LIPANA_PRODUCTION === "true" ||
-      process.env.NODE_ENV === "production";
+    // Determine environment: explicit setting or NODE_ENV
+    // LIPANA_ENVIRONMENT should be "sandbox" or "production"
+    const envSetting = process.env.LIPANA_ENVIRONMENT;
+    const isProduction = envSetting === "production" || 
+                         (envSetting !== "sandbox" && process.env.NODE_ENV === "production");
+    
+    // Log environment choice for debugging (without secrets)
+    console.log(`[Lipana] Using ${isProduction ? 'production' : 'sandbox'} environment`);
+    
     lipanaClient = new LipanaClient(secretKey, isProduction);
   }
 
