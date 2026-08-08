@@ -1,1 +1,2 @@
 - [Convex URL trailing slash](convex-url-trailing-slash.md) — CONVEX_URL must not end with a slash or ConvexHttpClient gets a 404 on /api/query
+- [Clerk API auth guards](clerk-api-auth-guards.md) — Express web APIs should inspect getAuth(req) directly so unauthenticated calls return JSON 401s instead of browser redirects

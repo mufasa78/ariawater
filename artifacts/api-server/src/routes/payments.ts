@@ -14,13 +14,27 @@ const router: Router = Router();
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "paystack"; // lipana | paystack
 
+const isConvexId = (value: string) => /^[a-z0-9]{32}$/.test(value);
+
 // POST /api/payments/initialize - Support both authenticated and guest checkout
 router.post("/initialize", optionalAuth, async (req, res) => {
   const parsed = InitializePaymentBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
+  if (!isConvexId(parsed.data.orderId)) {
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
+
   const isAdmin = req.user?.role === "admin";
-  const order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
+  let order: Record<string, unknown> | null;
+  try {
+    order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
+  } catch (error) {
+    req.log?.warn?.({ err: error }, "Unable to look up order for payment initialization");
+    res.status(404).json({ error: "Order not found" });
+    return;
+  }
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
   
   // Only check ownership if user is authenticated (not guest) and the order belongs to a customer
