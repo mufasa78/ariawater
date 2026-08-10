@@ -35,12 +35,12 @@ http.route({
       const resultDesc = payload.result_desc;
 
       if (event === "payment.success") {
-        await ctx.runMutation(internal.payments.markByProviderTransactionId, {
+        await ctx.runMutation(internal.payments.markByProviderTransactionIdInternal, {
           providerTransactionId: checkoutRequestId,
           successful: true,
         });
       } else if (event === "payment.failed") {
-        await ctx.runMutation(internal.payments.markByProviderTransactionId, {
+        await ctx.runMutation(internal.payments.markByProviderTransactionIdInternal, {
           providerTransactionId: checkoutRequestId,
           successful: false,
           failureReason: resultDesc || `Result code: ${resultCode}`,

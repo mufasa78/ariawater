@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalMutation } from "./_generated/server";
 import { v } from "convex/values";
 import { ConvexError } from "convex/values";
 
@@ -62,7 +62,30 @@ export const updateTransactionId = mutation({
   },
 });
 
+// Public mutation - called from both HTTP endpoint and API server
 export const markByProviderTransactionId = mutation({
+  args: {
+    providerTransactionId: v.string(),
+    successful: v.boolean(),
+    failureReason: v.optional(v.string()),
+  },
+  handler: async (ctx, { providerTransactionId, successful, failureReason }) => {
+    const payment = await ctx.db.query("payments").withIndex("by_provider_transaction", (q) => q.eq("providerTransactionId", providerTransactionId)).first();
+    if (!payment) throw new ConvexError("Payment not found");
+    if (["successful", "failed"].includes(payment.status)) return payment;
+    const now = Date.now();
+    await ctx.db.patch(payment._id, { status: successful ? "successful" : "failed", completedAt: now, failureReason });
+    await ctx.db.patch(payment.orderId, {
+      paymentStatus: successful ? "completed" : "failed",
+      ...(successful ? { status: "processing" as const } : {}),
+      updatedAt: now,
+    });
+    return ctx.db.get(payment._id);
+  },
+});
+
+// Internal mutation - called from HTTP handler webhook
+export const markByProviderTransactionIdInternal = internalMutation({
   args: {
     providerTransactionId: v.string(),
     successful: v.boolean(),
