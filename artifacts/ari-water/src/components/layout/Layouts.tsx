@@ -26,13 +26,20 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
 export function AdminLayout({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const { signOut } = useClerk();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   // Check if user has admin role from publicMetadata
   const isAdmin = user?.publicMetadata?.role === 'admin';
 
+  // Belt-and-suspenders guard on top of AdminRoute: actually redirect instead of dead-ending
+  React.useEffect(() => {
+    if (!user || !isAdmin) {
+      setLocation('/login');
+    }
+  }, [user, isAdmin, setLocation]);
+
   if (!user || !isAdmin) {
-    return <div className="p-8 text-center">Unauthorized. Redirecting...</div>;
+    return <div className="p-8 text-center">Unauthorized. Redirecting to login...</div>;
   }
 
   const navItems = [

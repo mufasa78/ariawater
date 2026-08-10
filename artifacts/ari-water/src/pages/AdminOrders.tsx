@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 
 export default function AdminOrders() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const [page, setPage] = useState(1);
   const limit = 20;
 
@@ -26,6 +27,21 @@ export default function AdminOrders() {
   });
 
   const orders = orderResponse?.orders || [];
+  
+  // Client-side search filtering
+  const filteredOrders = React.useMemo(() => {
+    if (!searchQuery.trim()) return orders;
+    
+    const lowerQuery = searchQuery.toLowerCase();
+    return orders.filter(order => 
+      order.id.toLowerCase().includes(lowerQuery) ||
+      order.customerName?.toLowerCase().includes(lowerQuery) ||
+      order.phone?.toLowerCase().includes(lowerQuery) ||
+      order.deliveryAddress?.toLowerCase().includes(lowerQuery) ||
+      order.ticketNumber?.toLowerCase().includes(lowerQuery)
+    );
+  }, [orders, searchQuery]);
+  
   const total = orderResponse?.total || 0;
   const totalPages = Math.ceil(total / limit);
 
@@ -40,7 +56,12 @@ export default function AdminOrders() {
         <div className="flex gap-2 items-center">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-slate-400" />
-            <Input placeholder="Search orders..." className="pl-9 w-[200px]" disabled />
+            <Input 
+              placeholder="Search orders..." 
+              className="pl-9 w-[200px]"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
           <Select value={statusFilter} onValueChange={(val) => { setStatusFilter(val); setPage(1); }}>
             <SelectTrigger className="w-[150px]">
@@ -72,13 +93,15 @@ export default function AdminOrders() {
             <tbody className="divide-y divide-slate-100">
               {isLoading ? (
                 <tr><td colSpan={5} className="text-center py-12 text-slate-500"><Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" /> Loading orders...</td></tr>
-              ) : orders.length === 0 ? (
-                <tr><td colSpan={5} className="text-center py-12 text-slate-500">No orders found matching your criteria.</td></tr>
+              ) : filteredOrders.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-12 text-slate-500">
+                  {searchQuery ? `No orders found matching "${searchQuery}"` : 'No orders found matching your criteria.'}
+                </td></tr>
               ) : (
-                orders.map((order) => (
+                filteredOrders.map((order) => (
                   <tr key={order.id} className="hover:bg-slate-50/50">
                     <td className="px-6 py-4 align-top">
-                      <div className="font-bold text-slate-900 mb-1">#{order.id}</div>
+                      <div className="font-bold text-slate-900 mb-1">#{order.ticketNumber || order.id}</div>
                       <div className="text-xs text-slate-500 mb-2">{formatDate(order.createdAt)}</div>
                       <Badge variant="outline" className={`${getStatusColor(order.status)} border-0 text-xs`}>
                         {order.status}
@@ -112,7 +135,9 @@ export default function AdminOrders() {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-6 py-4 bg-slate-50 border-t border-slate-100">
-            <span className="text-sm text-slate-600">Showing page {page} of {totalPages}</span>
+            <span className="text-sm text-slate-600">
+              Showing page {page} of {totalPages} {searchQuery && `(filtered)`}
+            </span>
             <div className="flex gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
               <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>

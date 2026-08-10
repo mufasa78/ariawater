@@ -37,7 +37,7 @@ export const RegisterResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
-  "role": zod.enum(['admin', 'customer'])
+  "role": zod.enum(['admin', 'marketing', 'sales', 'accounting', 'customer'])
 })
 
 
@@ -54,7 +54,7 @@ export const LoginResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
-  "role": zod.enum(['admin', 'customer'])
+  "role": zod.enum(['admin', 'marketing', 'sales', 'accounting', 'customer'])
 })
 
 
@@ -74,7 +74,7 @@ export const GetMeResponse = zod.object({
   "name": zod.string(),
   "email": zod.string(),
   "phone": zod.string().nullish(),
-  "role": zod.enum(['admin', 'customer'])
+  "role": zod.enum(['admin', 'marketing', 'sales', 'accounting', 'customer'])
 })
 
 
@@ -238,7 +238,7 @@ export const ListOrdersResponse = zod.object({
   "phone": zod.string(),
   "notes": zod.string().nullish(),
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
-  "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
+  "paymentMethod": zod.enum(['mpesa', 'pay_later', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
   "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
@@ -280,7 +280,7 @@ export const CreateOrderResponse = zod.object({
   "phone": zod.string(),
   "notes": zod.string().nullish(),
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
-  "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
+  "paymentMethod": zod.enum(['mpesa', 'pay_later', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
   "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
@@ -355,7 +355,7 @@ export const UpdateOrderStatusResponse = zod.object({
   "phone": zod.string(),
   "notes": zod.string().nullish(),
   "paymentStatus": zod.enum(['pending', 'completed', 'failed']),
-  "paymentMethod": zod.enum(['mpesa', 'card', 'bank_transfer', 'null']).nullish(),
+  "paymentMethod": zod.enum(['mpesa', 'pay_later', 'card', 'bank_transfer', 'null']).nullish(),
   "paystackRef": zod.string().nullish(),
   "ticketNumber": zod.string().nullish(),
   "createdAt": zod.coerce.date(),

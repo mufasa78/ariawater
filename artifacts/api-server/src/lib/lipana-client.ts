@@ -152,9 +152,13 @@ export class LipanaClient {
       .update(payload)
       .digest("hex");
 
-    return crypto.timingSafeEqual(
-      Buffer.from(signature),
-      Buffer.from(expectedSignature)
+    // timingSafeEqual throws if the buffers differ in length, so check first
+    return (
+      signature.length === expectedSignature.length &&
+      crypto.timingSafeEqual(
+        Buffer.from(signature),
+        Buffer.from(expectedSignature)
+      )
     );
   }
 

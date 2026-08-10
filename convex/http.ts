@@ -26,26 +26,37 @@ http.route({
         });
       }
 
-      // Parse payload
-      const payload = JSON.parse(rawBody);
-      const event = payload.event;
-      const checkoutRequestId = payload.checkout_request_id;
-      const mpesaReceiptNumber = payload.mpesa_receipt_number;
-      const resultCode = payload.result_code;
-      const resultDesc = payload.result_desc;
+      // Parse payload — Lipana webhook shape: { event, data: { transactionId, amount, currency, status, phone, checkoutRequestID, timestamp } }
+      const payload = JSON.parse(rawBody) as Record<string, unknown>;
+      const data = (payload.data ?? {}) as Record<string, unknown>;
+      const event = payload.event as string | undefined;
+      const transactionId =
+        (data.transactionId as string | undefined) ??
+        (data.checkoutRequestID as string | undefined) ??
+        (payload.checkout_request_id as string | undefined);
+      const resultDesc =
+        (data.message as string | undefined) ??
+        (data.resultDesc as string | undefined) ??
+        (payload.result_desc as string | undefined);
+      const resultCode = (data.resultCode as string | number | undefined) ?? (payload.result_code as string | number | undefined);
 
-      if (event === "payment.success") {
-        await ctx.runMutation(internal.payments.markByProviderTransactionIdInternal, {
-          providerTransactionId: checkoutRequestId,
-          successful: true,
-        });
-      } else if (event === "payment.failed") {
-        await ctx.runMutation(internal.payments.markByProviderTransactionIdInternal, {
-          providerTransactionId: checkoutRequestId,
-          successful: false,
-          failureReason: resultDesc || `Result code: ${resultCode}`,
+      if (!transactionId) {
+        return new Response(JSON.stringify({ error: "Missing transactionId" }), {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
         });
       }
+
+      const successful =
+        event === "payment.success" ||
+        data.status === "success" ||
+        String(resultCode) === "0";
+
+      await ctx.runMutation(internal.payments.markByProviderTransactionIdInternal, {
+        providerTransactionId: transactionId,
+        successful,
+        failureReason: successful ? undefined : resultDesc || `Payment failed (result code: ${resultCode ?? "unknown"})`,
+      });
 
       return new Response(JSON.stringify({ received: true }), {
         status: 200,

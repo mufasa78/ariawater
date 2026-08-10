@@ -4,14 +4,14 @@ import { v } from "convex/values";
 const DAY_MS = 86_400_000;
 
 export const summary = query({
-  args: {},
-  handler: async (ctx) => {
-    const now = Date.now();
+  args: { now: v.optional(v.number()) }, // pass Date.now() from the caller; queries must not read the wall clock
+  handler: async (ctx, { now = Date.now() }) => {
     const startOfToday = now - (now % DAY_MS);
     const startOfWeek = startOfToday - 6 * DAY_MS;
 
-    const allOrders = await ctx.db.query("orders").collect();
-    const allProducts = await ctx.db.query("products").collect();
+    // Bounded query - take last 10k orders for stats (prevents full table scan)
+    const allOrders = await ctx.db.query("orders").order("desc").take(10000);
+    const allProducts = await ctx.db.query("products").take(1000);
 
     let todayRevenue = 0, todayOrders = 0;
     let weekRevenue = 0, weekOrders = 0;
@@ -99,13 +99,13 @@ export const recentOrders = query({
 });
 
 export const revenueTrend = query({
-  args: { days: v.optional(v.number()) },
-  handler: async (ctx, { days = 30 }) => {
-    const now = Date.now();
+  args: { days: v.optional(v.number()), now: v.optional(v.number()) }, // pass Date.now() from the caller
+  handler: async (ctx, { days = 30, now = Date.now() }) => {
     const startOfToday = now - (now % DAY_MS);
     const startDate = startOfToday - (days - 1) * DAY_MS;
 
-    const orders = await ctx.db.query("orders").collect();
+    // Bounded query - take last 5000 orders for trend analysis
+    const orders = await ctx.db.query("orders").order("desc").take(5000);
     const filtered = orders.filter((o) => o._creationTime >= startDate);
 
     // Group by date

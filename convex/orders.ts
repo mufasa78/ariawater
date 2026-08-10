@@ -12,17 +12,19 @@ export const listByCustomer = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { customerId, page = 1, limit = 20 }) => {
-    const all = await ctx.db
+    // Use .take() instead of .collect() to bound the query
+    // For total count, we'll need to count separately or estimate
+    const orders = await ctx.db
       .query("orders")
       .withIndex("by_customer", (q) => q.eq("customerId", customerId as any))
       .order("desc")
-      .collect();
+      .take(limit * page); // Fetch up to the current page
 
-    const total = all.length;
+    const total = orders.length; // Approximate total (will be exact if < limit * page)
     const offset = (page - 1) * limit;
-    const orders = all.slice(offset, offset + limit);
+    const pageOrders = orders.slice(offset, offset + limit);
 
-    return { orders, total, page, limit };
+    return { orders: pageOrders, total, page, limit };
   },
 });
 
@@ -33,19 +35,31 @@ export const listAll = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { status, page = 1, limit = 50 }) => {
-    let all = await ctx.db.query("orders").order("desc").collect();
-
+    // Calculate how many we need to fetch to satisfy pagination
+    const maxToFetch = page * limit + 100; // Buffer for filtering
+    
+    let orders;
     if (status) {
-      all = all.filter((o) => o.status === status);
+      // If filtering by status, use index if available, otherwise scan bounded set
+      orders = await ctx.db
+        .query("orders")
+        .order("desc")
+        .take(maxToFetch);
+      orders = orders.filter((o) => o.status === status);
+    } else {
+      orders = await ctx.db
+        .query("orders")
+        .order("desc")
+        .take(maxToFetch);
     }
 
-    const total = all.length;
+    const total = orders.length; // Approximate (exact if < maxToFetch)
     const offset = (page - 1) * limit;
-    const orders = all.slice(offset, offset + limit);
+    const pageOrders = orders.slice(offset, offset + limit);
 
     // Attach customer info
     const enriched = await Promise.all(
-      orders.map(async (order) => {
+      pageOrders.map(async (order) => {
         let customerName = order.customerName ?? null;
         let customerEmail = order.customerEmail ?? null;
         
@@ -64,7 +78,7 @@ export const listAll = query({
         const items = await ctx.db
           .query("orderItems")
           .withIndex("by_order", (q) => q.eq("orderId", order._id))
-          .collect();
+          .take(10); // Bound item fetch
         return {
           ...order,
           customerName,

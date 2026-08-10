@@ -11,7 +11,7 @@ const router: Router = Router();
 
 // GET /api/dashboard/summary
 router.get("/summary", requireAdmin, async (_req, res) => {
-  const summary = await convex.query(api.dashboard.summary, {}) as Record<string, unknown>;
+  const summary = await convex.query(api.dashboard.summary, { now: Date.now() }) as Record<string, unknown>;
   res.json(GetDashboardSummaryResponse.parse(summary));
 });
 
@@ -25,7 +25,7 @@ router.get("/recent-orders", requireAdmin, async (req, res) => {
 // GET /api/dashboard/revenue-trend
 router.get("/revenue-trend", requireAdmin, async (req, res) => {
   const days = req.query.days ? Number(req.query.days) : 30;
-  const trend = await convex.query(api.dashboard.revenueTrend, { days }) as unknown[];
+  const trend = await convex.query(api.dashboard.revenueTrend, { days, now: Date.now() }) as unknown[];
   res.json(GetRevenueTrendResponse.parse(trend));
 });
 
