@@ -84,6 +84,7 @@ export default function Shop() {
   const [mpesaStatus, setMpesaStatus] = useState<MpesaStatus>('idle');
   const [mpesaMessage, setMpesaMessage] = useState('');
   const [ticketNumber, setTicketNumber] = useState('');
+  const [currentOrderId, setCurrentOrderId] = useState<string>('');
   const [orderTotalKes, setOrderTotalKes] = useState<number>(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -242,6 +243,7 @@ export default function Shop() {
         onSuccess: (order) => {
           clearCart();
           setTicketNumber(order.ticketNumber || '');
+          setCurrentOrderId(order.id); // Store order ID for receipt generation
           // Use server-calculated total from order
           setOrderTotalKes(order.totalKes || 0);
 
@@ -691,37 +693,20 @@ export default function Shop() {
                 <div className="flex flex-col gap-3">
                   <Button
                     onClick={() => {
-                      // Generate and download receipt
-                      const receiptContent = `
-ARI WATER - ORDER RECEIPT
-==========================
-Order ID: ${mpesaRef}
-Date: ${new Date().toLocaleString()}
-Amount: KES ${orderTotalKes.toLocaleString()}
-Payment Method: M-Pesa
-Status: PAID
-
-Customer: ${user?.fullName || customerName}
-Email: ${user?.primaryEmailAddress?.emailAddress || customerEmail}
-Phone: ${phone}
-Delivery Address: ${deliveryAddress}
-${notes ? `Notes: ${notes}` : ''}
-
-Thank you for your order!
-                      `;
-                      const blob = new Blob([receiptContent], { type: 'text/plain' });
-                      const url = URL.createObjectURL(blob);
+                      // Download PDF receipt from server
+                      const receiptUrl = `/api/receipts/${currentOrderId}/download`;
                       const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `ari-water-receipt-${mpesaRef}.txt`;
+                      a.href = receiptUrl;
+                      a.download = `receipt-${ticketNumber}.pdf`;
+                      a.target = '_blank';
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
                     }}
                     className="w-full"
+                    disabled={!currentOrderId}
                   >
-                    Download Receipt
+                    Download Receipt (PDF)
                   </Button>
                   <Button
                     variant="outline"

@@ -8,6 +8,7 @@ import dashboardRouter from "./dashboard.js";
 import paymentsRouter from "./payments.js";
 import uploadsRouter from "./uploads.js";
 import ticketsRouter from "./tickets.js";
+import receiptsRouter from "./receipts.js";
 import debugRouter from "./debug.js";
 
 const router: IRouter = Router();
@@ -21,6 +22,7 @@ router.use("/dashboard", dashboardRouter);
 router.use("/payments", paymentsRouter);
 router.use("/uploads", uploadsRouter);
 router.use("/tickets", ticketsRouter);
+router.use("/receipts", receiptsRouter);
 router.use("/debug", debugRouter);
 
 export default router;
