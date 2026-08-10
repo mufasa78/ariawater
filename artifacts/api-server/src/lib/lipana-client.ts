@@ -34,6 +34,16 @@ export interface LipanaWebhookPayload {
   };
 }
 
+export interface LipanaPaymentStatus {
+  success: boolean;
+  data?: {
+    status: string;
+    amount: number;
+    transactionId: string;
+  };
+  error?: string;
+}
+
 export class LipanaClient {
   private readonly secretKey: string;
   private readonly baseUrl: string;
@@ -77,7 +87,7 @@ export class LipanaClient {
 
       return {
         success: true,
-        message: data.message || "Payment initiated successfully",
+        message: (data as any).message || "Payment initiated successfully",
         data: (data as any).data,
       };
     } catch (error) {
@@ -106,7 +116,7 @@ export class LipanaClient {
         }
       );
 
-      const data = await response.json();
+      const data = await response.json() as any;
 
       if (!response.ok) {
         return {

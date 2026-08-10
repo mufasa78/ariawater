@@ -58,9 +58,13 @@ router.post("/webhook/lipana", async (req, res) => {
   const signature = req.headers["x-lipana-signature"] as string | undefined;
   const secret = process.env.LIPANA_WEBHOOK_SECRET;
   if (!secret || !signature) { res.status(401).json({ error: "Invalid webhook signature" }); return; }
-  const raw = Buffer.isBuffer((req as Request & { rawBody?: Buffer }).rawBody)
-    ? (req as Request & { rawBody?: Buffer }).rawBody!.toString("utf8")
+  
+  // Get raw body for signature verification
+  const rawBody = (req as any).rawBody;
+  const raw = Buffer.isBuffer(rawBody)
+    ? rawBody.toString("utf8")
     : JSON.stringify(req.body);
+  
   if (!getLipanaClient().verifyWebhookSignature(raw, signature, secret)) { res.status(401).json({ error: "Invalid webhook signature" }); return; }
   const transactionId = req.body?.data?.transactionId;
   if (!transactionId) { res.status(400).json({ error: "Missing transactionId" }); return; }

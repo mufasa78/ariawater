@@ -73,9 +73,9 @@ router.get("/", async (req, res) => {
       ),
     ]);
 
-    req.log?.info?.({ count: products.length }, "Products fetched successfully");
+    req.log?.info?.({ count: (products as any[]).length }, "Products fetched successfully");
 
-    res.json(ListProductsResponse.parse(products.map(mapProduct)));
+    res.json(ListProductsResponse.parse((products as any[]).map(mapProduct)));
   } catch (error) {
     req.log?.error?.({ err: error }, "Failed to fetch products");
     
