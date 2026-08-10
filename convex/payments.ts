@@ -35,7 +35,7 @@ export const create = mutation({
     const existing = await ctx.db.query("payments").withIndex("by_order", (q) => q.eq("orderId", orderId)).order("desc").first();
     if (existing && ["pending", "initiated"].includes(existing.status)) return existing;
     const paymentId = await ctx.db.insert("payments", {
-      orderId, provider, amount: Math.round(amount), phone, status: "pending", createdAt: Date.now(),
+      orderId, provider: "lipana" as const, amount: Math.round(amount), phone, status: "pending", createdAt: Date.now(),
     });
     return ctx.db.get(paymentId);
   },

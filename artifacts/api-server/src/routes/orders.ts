@@ -119,16 +119,51 @@ router.post("/", optionalAuth, async (req, res) => {
     return;
   }
 
-  // Check if user is authenticated
+  // Check if user is authenticated via Clerk
   const isAuthenticated = req.user !== undefined;
-  const customerId = isAuthenticated ? req.user!.userId as any : undefined;
-  const customerName = isAuthenticated ? req.user!.name : parsed.data.customerName;
-  const customerEmail = isAuthenticated ? req.user!.email : parsed.data.customerEmail;
+  let customerId = isAuthenticated ? req.user!.userId as any : undefined;
+  let customerName = isAuthenticated ? req.user!.name : parsed.data.customerName;
+  let customerEmail = isAuthenticated ? req.user!.email : parsed.data.customerEmail;
 
   // For guest checkout, require customerName and customerEmail
   if (!isAuthenticated && (!customerName || !customerEmail)) {
     res.status(400).json({ error: "customerName and customerEmail are required for guest checkout" });
     return;
+  }
+
+  // Phone-based customer lookup for returning customers
+  // This allows us to link orders even for guests who return with same phone number
+  if (!isAuthenticated && parsed.data.phone) {
+    try {
+      // Try to find existing customer by phone number
+      const existingCustomer = await convex.query(api.users.getByPhone, {
+        phone: parsed.data.phone,
+      }) as Record<string, unknown> | null;
+
+      if (existingCustomer) {
+        // Use existing customer ID to link orders
+        customerId = existingCustomer._id as any;
+        // Use stored customer details if available
+        customerName = (existingCustomer.name as string) || customerName;
+        customerEmail = (existingCustomer.email as string) || customerEmail;
+        
+        req.log?.info?.({ phone: parsed.data.phone, customerId }, "Found existing customer by phone");
+      } else {
+        // Create a guest customer record for future linking
+        const guestCustomer = await convex.mutation(api.users.createGuestByPhone, {
+          phone: parsed.data.phone,
+          name: customerName!,
+          email: customerEmail!,
+        }) as Record<string, unknown>;
+        
+        customerId = guestCustomer._id as any;
+        
+        req.log?.info?.({ phone: parsed.data.phone, customerId }, "Created guest customer by phone");
+      }
+    } catch (error) {
+      // If phone lookup fails, continue with guest checkout
+      req.log?.warn?.({ error, phone: parsed.data.phone }, "Phone-based customer lookup failed, continuing as guest");
+    }
   }
 
   let order: Record<string, unknown>;

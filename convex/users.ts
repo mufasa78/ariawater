@@ -88,3 +88,63 @@ export const approveUser = mutation({
     return ctx.db.get(userId);
   },
 });
+
+// Phone-based customer lookup for guest checkout
+export const getByPhone = query({
+  args: { phone: v.string() },
+  handler: async (ctx, { phone }) => {
+    // Normalize phone number for comparison (remove spaces, dashes, etc.)
+    const normalizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+    
+    // Try to find user by phone number
+    const users = await ctx.db.query("users").collect();
+    return users.find(u => {
+      if (!u.phone) return false;
+      const userPhone = u.phone.replace(/[\s\-\(\)]/g, '');
+      return userPhone === normalizedPhone || 
+             userPhone === normalizedPhone.replace(/^0/, '254') ||
+             normalizedPhone === userPhone.replace(/^0/, '254') ||
+             userPhone === `+${normalizedPhone}` ||
+             normalizedPhone === `+${userPhone}`;
+    }) || null;
+  },
+});
+
+// Create guest customer by phone for order tracking
+export const createGuestByPhone = mutation({
+  args: {
+    phone: v.string(),
+    name: v.string(),
+    email: v.string(),
+  },
+  handler: async (ctx, { phone, name, email }) => {
+    // Check if customer already exists
+    const existing = await ctx.db
+      .query("users")
+      .collect()
+      .then(users => users.find(u => {
+        if (!u.phone) return false;
+        const normalizedPhone = phone.replace(/[\s\-\(\)]/g, '');
+        const userPhone = u.phone.replace(/[\s\-\(\)]/g, '');
+        return userPhone === normalizedPhone || 
+               userPhone === normalizedPhone.replace(/^0/, '254') ||
+               normalizedPhone === userPhone.replace(/^0/, '254');
+      }));
+    
+    if (existing) {
+      return existing;
+    }
+    
+    // Create guest customer record
+    const id = await ctx.db.insert("users", {
+      name,
+      email,
+      phone,
+      passwordHash: "", // No password for guests
+      role: "customer",
+      approved: true, // Auto-approve guest customers
+    });
+    
+    return ctx.db.get(id);
+  },
+});
