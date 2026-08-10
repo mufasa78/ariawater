@@ -6,8 +6,13 @@ import { api } from "../../../../convex/_generated/api";
 const convexUrl = process.env.CONVEX_URL ?? process.env.CONVEX_DEPLOYMENT_URL;
 
 if (!convexUrl) {
-  throw new Error("CONVEX_URL or CONVEX_DEPLOYMENT_URL env var is required");
+  const errorMsg = "CRITICAL: CONVEX_URL or CONVEX_DEPLOYMENT_URL environment variable is not set. " +
+    "Please set CONVEX_URL=https://grand-dachshund-295.convex.cloud/ in Vercel environment variables.";
+  console.error(errorMsg);
+  throw new Error(errorMsg);
 }
+
+console.log(`[Convex] Connecting to: ${convexUrl}`);
 
 // Strip trailing slash — ConvexHttpClient appends /api/query, so a trailing
 // slash would produce //api/query (404).
