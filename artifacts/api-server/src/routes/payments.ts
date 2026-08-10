@@ -1,477 +1,72 @@
 import { Router } from "express";
 import { convex, api } from "../lib/convex-client.js";
 import { optionalAuth } from "../middlewares/auth.js";
-import {
-  InitializePaymentBody,
-  InitializePaymentResponse,
-  VerifyPaymentBody,
-  VerifyPaymentResponse,
-} from "@workspace/api-zod";
+import { getLipanaClient, LipanaClient } from "../lib/lipana-client.js";
+import { InitializePaymentBody, InitializePaymentResponse, VerifyPaymentBody, VerifyPaymentResponse } from "@workspace/api-zod";
 
 const router: Router = Router();
+const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "lipana";
 
-const PAYMENT_PROVIDER = process.env.PAYMENT_PROVIDER || "lipana"; // lipana | paystack
-
-// POST /api/payments/initialize - Support both authenticated and guest checkout
 router.post("/initialize", optionalAuth, async (req, res) => {
   const parsed = InitializePaymentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const isAdmin = req.user?.role === "admin";
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const order = await convex.query(api.orders.get, { id: parsed.data.orderId as any }) as Record<string, unknown> | null;
-  if (!order) {
-    res.status(404).json({ error: "Order not found" });
+  if (!order) { res.status(404).json({ error: "Order not found" }); return; }
+  const isAdmin = req.user?.role === "admin";
+  if (req.user && !isAdmin && order.customerId && order.customerId !== req.user.userId) { res.status(403).json({ error: "Access denied" }); return; }
+
+  const amountKes = Math.round(Number(order.totalKes));
+  const phoneNumber = String(order.phone || "");
+  if (PAYMENT_PROVIDER !== "lipana") {
+    const reference = `ARI-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    res.json(InitializePaymentResponse.parse({ authorizationUrl: `https://mock-paystack.test/pay/${reference}`, reference, amountKes }));
     return;
   }
-  
-  // Only check ownership if user is authenticated (not guest) and the order belongs to a customer
-  if (req.user && !isAdmin && order.customerId && order.customerId !== req.user.userId){
-    res.status(403).json({ error: "Access denied" });
-    return;
-  }
+  if (!LipanaClient.isValidKenyanPhone(phoneNumber)) { res.status(400).json({ error: "Invalid Kenyan phone number format" }); return; }
+  if (amountKes < 10) { res.status(400).json({ error: "Minimum transaction amount is Ksh 10" }); return; }
 
-  // Lipana M-Pesa Payment via Convex Action
-  if (PAYMENT_PROVIDER === "lipana") {
-    try {
-      console.log(`Initializing Lipana payment for order ${parsed.data.orderId} via Convex`);
-
-      // 1. Create a payment record in Convex
-      const paymentId = await convex.mutation(api.payments.createPayment, {
-        orderId: parsed.data.orderId as any,
-        amount: Math.round(order.totalKes as number),
-        phone: order.phone as string,
-      }) as string;
-
-      // 2. Trigger the Convex Action to initiate STK Push via Lipana
-      const result = await convex.action(api.payments.initiateLipana, {
-        paymentId: paymentId as any,
-      }) as { success: boolean; error?: string; providerTransactionId?: string };
-
-      if (!result.success) {
-        console.error("Lipana STK Push initiation failed inside Convex action", result.error);
-
-        // Return a 200 with a degraded payload so the client can show a "pay later" UX
-        res.json(InitializePaymentResponse.parse({
-          authorizationUrl: "",
-          reference: paymentId, // Return Convex paymentId as reference
-          message: result.error || "M-Pesa prompt could not be sent at this time. You can complete payment from your orders page.",
-      // Validate and format phone number
-      if (!LipanaClient.isValidKenyanPhone(phoneNumber)) {
-        req.log?.warn?.({ phone: phoneNumber }, "Invalid Kenyan phone number format");
-        res.status(400).json({ error: "Invalid Kenyan phone number format" });
-        return;
-      }
-
-      const formattedPhone = LipanaClient.formatPhoneNumber(phoneNumber);
-      const orderTotal = Math.round(order.totalKes as number);
-
-      // Validate minimum amount (Ksh 10)
-      if (orderTotal < 10) {
-        req.log?.warn?.({ orderId: parsed.data.orderId, amount: orderTotal }, "Amount below minimum Ksh 10");
-        res.status(400).json({ error: "Minimum transaction amount is Ksh 10" });
-        return;
-      }
-
-      req.log?.info?.({ orderId: parsed.data.orderId, phone: formattedPhone, amount: orderTotal }, "Initiating Lipana STK push");
-
-      // STEP 1: Create Convex payment record first (fallback to order.paystackRef if payments table not deployed)
-      let paymentId: string;
-      let useFallback = false;
-      
-      try {
-        const payment = await convex.mutation(api.payments.create, {
-          orderId: parsed.data.orderId as any,
-          provider: "lipana",
-          amount: orderTotal,
-          phone: formattedPhone,
-        });
-        paymentId = payment._id as string;
-        req.log?.info?.({ orderId: parsed.data.orderId, paymentId }, "Convex payment record created");
-      } catch (error) {
-        // Fallback: payments table not deployed yet, use order.paystackRef
-        useFallback = true;
-        paymentId = `pending-${Date.now()}`;
-        req.log?.warn?.({ orderId: parsed.data.orderId, error: error instanceof Error ? error.message : "Unknown" }, "Payments table not deployed, using fallback");
-      }
-
-      // STEP 2: Call Lipana with order.orderNumber as account reference
-      const paymentResult = await lipana.initiatePayment({
-        phone: formattedPhone,
-        amount: orderTotal,
-      });
-
-      if (!paymentResult.success || !paymentResult.data) {
-        // Payment provider unreachable or rejected
-        req.log?.warn?.({ orderId: parsed.data.orderId, paymentId, message: paymentResult.message }, "Lipana STK initiation failed");
-        if (!useFallback) {
-          await convex.mutation(api.payments.markFailed, { id: paymentId as any });
-        } else {
-          // Store the pending reference in order.paystackRef so status endpoint can find it
-          await convex.mutation(api.orders.updatePayment, { 
-            id: parsed.data.orderId as any, 
-            paystackRef: paymentId,
-            paymentStatus: "failed" 
-          });
-        }
-        res.json(InitializePaymentResponse.parse({
-          authorizationUrl: "",
-          reference: paymentId,
-          amountKes: orderTotal,
-          message: paymentResult.message || "M-Pesa prompt could not be sent at this time. You can complete payment from your orders page.",
-        }));
-        return;
-      }
-
-      console.log(`Lipana payment initiated. Convex PaymentId: ${paymentId}, TransactionId: ${result.providerTransactionId}`);
-
-      res.json(InitializePaymentResponse.parse({
-        authorizationUrl: `mpesa://stk-push/${result.providerTransactionId}`,
-        reference: paymentId, // Return Convex paymentId as reference
-        message: "An M-Pesa payment prompt has been sent to your phone. Enter your PIN to complete.",
-      }));
-      return;
-    } catch (error) {
-      console.error("Failed to initialize payment via Convex", error);
-      // STEP 3: Persist Lipana transactionId
-      if (!useFallback) {
-        await convex.mutation(api.payments.updateProviderTransactionId, {
-          id: paymentId as any,
-          providerTransactionId: paymentResult.data.transactionId,
-          status: "initiated",
-        });
-      } else {
-        // Fallback: store Lipana transactionId in order.paystackRef
-        await convex.mutation(api.orders.updatePayment, {
-          id: parsed.data.orderId as any,
-          paystackRef: paymentResult.data.transactionId,
-          paymentStatus: "pending",
-        });
-        // Return the Lipana transactionId as reference for polling (not the pending reference)
-        paymentId = paymentResult.data.transactionId;
-      }
-
-      req.log?.info?.({ orderId: parsed.data.orderId, paymentId, transactionId: paymentResult.data.transactionId, useFallback }, "Lipana STK initiated successfully");
-
-      res.json(InitializePaymentResponse.parse({
-        authorizationUrl: `mpesa://stk-push/${paymentResult.data.transactionId}`,
-        reference: paymentId,
-        amountKes: orderTotal,
-        message: paymentResult.data.message,
-      }));
-      return;
-    } catch (error) {
-      req.log?.error?.({ err: error, orderId: parsed.data.orderId }, "Failed to initialize M-Pesa payment");
-      res.status(500).json({ 
-        error: "Failed to initialize M-Pesa payment",
-        message: error instanceof Error ? error.message : "Unknown error" 
-      });
+  try {
+    const payment = await convex.mutation(api.payments.create, { orderId: parsed.data.orderId as any, provider: "lipana", amount: amountKes, phone: LipanaClient.formatPhoneNumber(phoneNumber) });
+    const paymentId = payment._id as string;
+    const result = await getLipanaClient().initiatePayment({ phone: LipanaClient.formatPhoneNumber(phoneNumber), amount: amountKes });
+    if (!result.success || !result.data) {
+      await convex.mutation(api.payments.markFailed, { id: paymentId as any });
+      res.json(InitializePaymentResponse.parse({ authorizationUrl: "", reference: paymentId, amountKes, message: result.message || "M-Pesa prompt could not be sent" }));
       return;
     }
+    await convex.mutation(api.payments.updateProviderTransactionId, { id: paymentId as any, providerTransactionId: result.data.transactionId, status: "initiated" });
+    res.json(InitializePaymentResponse.parse({ authorizationUrl: `mpesa://stk-push/${result.data.transactionId}`, reference: paymentId, amountKes, message: result.data.message || result.message }));
+  } catch (error) {
+    req.log?.error?.({ err: error }, "Failed to initialize Lipana payment");
+    res.status(502).json({ error: "Failed to initialize M-Pesa payment", message: error instanceof Error ? error.message : "Unknown error" });
   }
-
-  // Fallback / paystack mock mode
-  const mockRef = `ARI-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
-  res.json(InitializePaymentResponse.parse({ authorizationUrl: `https://mock-paystack.test/pay/${mockRef}`, reference: mockRef }));
 });
 
-// POST /api/payments/verify - Support both authenticated and guest checkout
 router.post("/verify", optionalAuth, async (req, res) => {
   const parsed = VerifyPaymentBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-
-  const { reference } = parsed.data;
-
-  // Lipana M-Pesa Verification via Convex Query
-  if (PAYMENT_PROVIDER === "lipana") {
-    try {
-      console.log(`Verifying Lipana payment for reference (paymentId): ${reference}`);
-
-      // Query Convex directly for payment status
-      const payment = await convex.query(api.payments.getPayment, {
-        paymentId: reference as any,
-      }) as Record<string, any> | null;
-
-      if (!payment) {
-        console.warn(`No payment found in Convex for paymentId: ${reference}`);
-  req.log?.info?.({ reference, isAdmin }, "Payment verification request");
-
-  // Lipana M-Pesa Verification - READ FROM DB ONLY (source of truth)
-  if (PAYMENT_PROVIDER === "lipana") {
-    try {
-      // Find order by reference - this is our source of truth
-      const order = await convex.query(api.orders.getByPaystackRef, {
-        reference,
-        customerId: isAdmin ? undefined : (req.user?.userId as any),
-      }) as Record<string, unknown> | null;
-
-      if (!order) {
-        req.log?.warn?.({ reference }, "Order not found for verification");
-        res.json(VerifyPaymentResponse.parse({ 
-          success: false, 
-          status: "failed", 
-          orderId: null,
-          message: "Payment not found"
-          message: "Order not found" 
-        }));
-        return;
-      }
-
-      const isSuccess = payment.status === "successful";
-
-      res.json(VerifyPaymentResponse.parse({
-        success: isSuccess,
-        status: isSuccess ? "success" : payment.status,
-        orderId: payment.orderId,
-        mpesaReceiptNumber: payment.providerReference || undefined,
-        message: payment.failureReason || (isSuccess ? "Payment was successful" : `Payment status: ${payment.status}`),
-      }));
-      return;
-    } catch (error) {
-      console.error("Failed to verify payment via Convex", error);
-      // Return the status from our database (webhook-updated)
-      const paymentStatus = order.paymentStatus as string;
-      const isSuccess = paymentStatus === "completed";
-      const isFailed = paymentStatus === "failed";
-      const isPending = paymentStatus === "pending";
-
-      req.log?.info?.({ orderId: order._id, paymentStatus }, "Payment status from DB");
-
-      res.json(VerifyPaymentResponse.parse({
-        success: isSuccess,
-        status: isSuccess ? "success" : (isFailed ? "failed" : "pending"),
-        orderId: (order._id as string) ?? null,
-        message: isSuccess ? "Payment completed" : (isFailed ? "Payment failed" : "Payment pending"),
-      }));
-      return;
-    } catch (error) {
-      req.log?.error?.({ err: error, reference }, "Payment verification error");
-      res.json(VerifyPaymentResponse.parse({ 
-        success: false, 
-        status: "failed", 
-        orderId: null,
-        message: error instanceof Error ? error.message : "Unknown error" 
-      }));
-      return;
-    }
-  }
-
-  // Paystack Fallback
-  res.json(VerifyPaymentResponse.parse({ success: true, status: "success", orderId: null }));
-});
-
-// POST /api/payments/webhook/lipana - Lipana webhook handler (proxies to Convex HTTP Action)
-router.post("/webhook/lipana", async (req, res) => {
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   try {
-    const signature = req.headers["x-lipana-signature"] as string;
-    const convexUrl = process.env.CONVEX_URL ?? process.env.CONVEX_DEPLOYMENT_URL;
-
-    if (!convexUrl) {
-      res.status(500).json({ error: "Convex URL not configured" });
-      return;
-    }
-
-    // Derive Convex Site URL from Convex Cloud URL (e.g. replace .cloud with .site)
-    const convexSiteUrl = convexUrl.replace(/\.cloud$/, ".site");
-    console.log(`Proxying Lipana Webhook to Convex HTTP Action: ${convexSiteUrl}/lipana/webhook`);
-
-    // Proxy webhook payload to Convex HTTP Action
-    const proxyRes = await fetch(`${convexSiteUrl}/lipana/webhook`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Lipana-Signature": signature,
-      },
-      body: JSON.stringify(req.body),
-    });
-    if (!webhookSecret) {
-      req.log?.error?.("Webhook secret not configured");
-      res.status(500).json({ error: "Webhook secret not configured" });
-      return;
-    }
-
-    // Verify webhook signature using RAW request body
-    const lipana = getLipanaClient();
-    const rawBody = (req as any).rawBody || (req as any).body;
-    const payload = typeof rawBody === 'string' ? rawBody : JSON.stringify(req.body);
-    const isValid = lipana.verifyWebhookSignature(payload, signature, webhookSecret);
-
-    if (!isValid) {
-      req.log?.warn?.({ signature: "***" }, "Invalid webhook signature");
-      res.status(401).json({ error: "Invalid webhook signature" });
-      return;
-    }
-
-    const webhookData = req.body;
-    const transactionId = webhookData.data?.transactionId;
-    const event = webhookData.event;
-
-    req.log?.info?.({ transactionId, event }, "Received Lipana webhook");
-
-    // Try to find payment by providerTransactionId (new approach)
-    let payment = await convex.query(api.payments.getByProviderTransactionId, {
-      providerTransactionId: transactionId,
-    }) as Record<string, unknown> | null;
-
-    // Fallback: try to find order by paystackRef (old approach)
-    let order = null;
-    if (!payment) {
-      order = await convex.query(api.orders.getByPaystackRef, {
-        reference: transactionId,
-      }) as Record<string, unknown> | null;
-      req.log?.info?.({ transactionId, orderFound: !!order }, "Using fallback order lookup");
-    }
-
-    if (!payment && !order) {
-      req.log?.warn?.({ transactionId }, "Payment/order not found for webhook");
-      res.status(404).json({ error: "Payment not found" });
-      return;
-    }
-
-    // IDEMPOTENCY CHECK
-    if (payment && payment.status === "successful") {
-      req.log?.info?.({ paymentId: payment._id, transactionId }, "Payment already successful, skipping webhook");
-      res.json({ success: true, message: "Webhook processed successfully (idempotent)" });
-      return;
-    }
-    if (order && order.paymentStatus === "completed") {
-      req.log?.info?.({ orderId: order._id, transactionId }, "Order already completed, skipping webhook");
-      res.json({ success: true, message: "Webhook processed successfully (idempotent)" });
-      return;
-    }
-
-    // Update payment status based on webhook event
-    if (event === "payment.success" || webhookData.data?.status === "success") {
-      if (payment) {
-        await convex.mutation(api.payments.markSuccessful, { id: payment._id as any });
-        req.log?.info?.({ paymentId: payment._id, transactionId, orderId: payment.orderId }, "Payment marked successful via webhook");
-      } else if (order) {
-        await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "completed" });
-        req.log?.info?.({ orderId: order._id, transactionId }, "Order marked completed via webhook (fallback)");
-      }
-    } else if (event === "payment.failed" || webhookData.data?.status === "failed") {
-      if (payment) {
-        await convex.mutation(api.payments.markFailed, { id: payment._id as any });
-        req.log?.info?.({ paymentId: payment._id, transactionId, orderId: payment.orderId }, "Payment marked failed via webhook");
-      } else if (order) {
-        await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "failed" });
-        req.log?.info?.({ orderId: order._id, transactionId }, "Order marked failed via webhook (fallback)");
-      }
-    } else if (event === "payment.cancelled") {
-      if (payment) {
-        await convex.mutation(api.payments.markCancelled, { id: payment._id as any });
-        req.log?.info?.({ paymentId: payment._id, transactionId, orderId: payment.orderId }, "Payment marked cancelled via webhook");
-      } else if (order) {
-        await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "failed" });
-        req.log?.info?.({ orderId: order._id, transactionId }, "Order marked failed via webhook (fallback)");
-      }
-    } else if (event === "payment.expired") {
-      if (payment) {
-        await convex.mutation(api.payments.markExpired, { id: payment._id as any });
-        req.log?.info?.({ paymentId: payment._id, transactionId, orderId: payment.orderId }, "Payment marked expired via webhook");
-      } else if (order) {
-        await convex.mutation(api.orders.updatePayment, { id: order._id as any, paymentStatus: "failed" });
-        req.log?.info?.({ orderId: order._id, transactionId }, "Order marked failed via webhook (fallback)");
-      }
-    }
-
-    const data = await proxyRes.text();
-    res.status(proxyRes.status).send(data);
+    const payment = await convex.query(api.payments.getPayment, { paymentId: parsed.data.reference as any }) as Record<string, unknown> | null;
+    const status = String(payment?.status || "pending");
+    res.json(VerifyPaymentResponse.parse({ success: status === "successful", status: status === "successful" ? "success" : status, orderId: payment?.orderId || null, message: status === "successful" ? "Payment was successful" : `Payment status: ${status}` }));
   } catch (error) {
-    console.error("Proxy webhook to Convex failed", error);
-    req.log?.error?.({ err: error }, "Webhook processing failed");
-    res.status(500).json({ 
-      error: "Webhook proxy failed",
-      message: error instanceof Error ? error.message : "Unknown error" 
-    });
+    res.status(500).json({ error: error instanceof Error ? error.message : "Payment verification failed" });
   }
 });
 
-// GET /api/payments/:paymentId/status - Get payment status by Convex payment ID
-router.get("/:paymentId/status", optionalAuth, async (req, res) => {
-  const { paymentId } = req.params;
-  const isAdmin = req.user?.role === "admin";
-
-  req.log?.info?.({ paymentId, isAdmin }, "Payment status request");
-
-  // Lipana M-Pesa Status - READ FROM DB ONLY (source of truth)
-  if (PAYMENT_PROVIDER === "lipana") {
-    try {
-      // Try to find payment by Convex payment ID (new approach)
-      let payment = await convex.query(api.payments.getById, {
-        id: paymentId as any,
-      }) as Record<string, unknown> | null;
-
-      // Fallback: if paymentId starts with "pending-", try to find by paystackRef (old approach)
-      let order = null;
-      if (!payment && paymentId.startsWith("pending-")) {
-        order = await convex.query(api.orders.getByPaystackRef, {
-          reference: paymentId,
-        }) as Record<string, unknown> | null;
-        req.log?.info?.({ paymentId, orderFound: !!order }, "Using fallback order lookup for pending reference");
-      }
-
-      if (!payment && !order) {
-        req.log?.warn?.({ paymentId }, "Payment/order not found for status check");
-        // Return a failed status instead of 404 for pending references
-        if (paymentId.startsWith("pending-")) {
-          res.json({
-            success: false,
-            status: "failed",
-            orderId: null,
-            message: "Payment initiation failed. Please try again.",
-          });
-          return;
-        }
-        res.status(404).json({ error: "Payment not found", code: "PAYMENT_NOT_FOUND" });
-        return;
-      }
-
-      // Return the status from our database (webhook-updated)
-      let paymentStatus: string;
-      let orderId: string | null;
-
-      if (payment) {
-        paymentStatus = payment.status as string;
-        orderId = (payment.orderId as string) ?? null;
-      } else {
-        paymentStatus = order.paymentStatus as string;
-        orderId = (order._id as string) ?? null;
-      }
-
-      const isSuccess = paymentStatus === "successful" || paymentStatus === "completed";
-      const isFailed = paymentStatus === "failed";
-      const isCancelled = paymentStatus === "cancelled";
-      const isExpired = paymentStatus === "expired";
-      const isPending = paymentStatus === "pending";
-      const isInitiated = paymentStatus === "initiated";
-
-      req.log?.info?.({ paymentId, paymentStatus, orderId, isFallback: !!order }, "Payment status from DB");
-
-      res.json({
-        success: isSuccess,
-        status: isSuccess ? "success" : (isFailed || isCancelled || isExpired ? "failed" : (isInitiated ? "pending" : "pending")),
-        orderId,
-        message: isSuccess ? "Payment completed" : (isFailed ? "Payment failed" : (isCancelled ? "Payment cancelled" : (isExpired ? "Payment expired" : "Payment pending"))),
-      });
-      return;
-    } catch (error) {
-      req.log?.error?.({ err: error, paymentId }, "Payment status check error");
-      res.status(500).json({ 
-        error: "Failed to check payment status",
-        message: error instanceof Error ? error.message : "Unknown error" 
-      });
-      return;
-    }
-  }
-
-  // Paystack fallback
-  res.status(501).json({ error: "Payment provider not configured" });
+router.post("/webhook/lipana", async (req, res) => {
+  const signature = req.headers["x-lipana-signature"] as string | undefined;
+  const secret = process.env.LIPANA_WEBHOOK_SECRET;
+  if (!secret || !signature) { res.status(401).json({ error: "Invalid webhook signature" }); return; }
+  const raw = JSON.stringify(req.body);
+  if (!getLipanaClient().verifyWebhookSignature(raw, signature, secret)) { res.status(401).json({ error: "Invalid webhook signature" }); return; }
+  const transactionId = req.body?.data?.transactionId;
+  if (!transactionId) { res.status(400).json({ error: "Missing transactionId" }); return; }
+  const payment = await convex.query(api.payments.getByProviderTransactionId, { providerTransactionId: transactionId }) as Record<string, unknown> | null;
+  if (!payment) { res.status(404).json({ error: "Payment not found" }); return; }
+  const successful = req.body?.event === "payment.success" || req.body?.data?.status === "success";
+  await convex.mutation(api.payments[successful ? "markSuccessful" : "markFailed"] as any, { id: payment._id as any });
+  res.json({ success: true });
 });
 
 export default router;
