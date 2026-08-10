@@ -268,7 +268,41 @@ export const updateStatus = mutation({
   handler: async (ctx, { id, status }) => {
     const order = await ctx.db.get(id);
     if (!order) throw new ConvexError("Order not found");
-    await ctx.db.patch(id, { status, updatedAt: Date.now() });
+    
+    const now = Date.now();
+    
+    // Update order status
+    await ctx.db.patch(id, { status, updatedAt: now });
+    
+    // Update associated ticket with status change message
+    const ticket = await ctx.db
+      .query("tickets")
+      .withIndex("by_order", (q) => q.eq("orderId", id))
+      .first();
+    
+    if (ticket) {
+      const statusMessages: Record<string, string> = {
+        received: "Your order has been received and is being prepared for processing.",
+        processing: "Your order is now being processed and will be dispatched soon.",
+        dispatched: "Your order has been dispatched and is on its way to you!",
+        delivered: "Your order has been delivered. Thank you for choosing Ari Water!"
+      };
+      
+      await ctx.db.patch(ticket._id, {
+        messages: [
+          ...ticket.messages,
+          {
+            sender: "system" as const,
+            text: statusMessages[status] || `Order status updated to ${status}`,
+            timestamp: now
+          }
+        ],
+        updatedAt: now,
+        // Auto-resolve ticket when order is delivered
+        ...(status === "delivered" ? { status: "resolved" as const } : {})
+      });
+    }
+    
     return ctx.db.get(id);
   },
 });
@@ -309,5 +343,56 @@ export const getByPaystackRef = query({
     if (!order) return null;
     if (customerId && order.customerId && order.customerId !== customerId) return null;
     return order;
+  },
+});
+
+// Utility mutation to create tickets for orders that don't have them (migration/repair)
+export const createMissingTickets = mutation({
+  args: {},
+  handler: async (ctx, {}) => {
+    const orders = await ctx.db.query("orders").take(1000);
+    let created = 0;
+    let skipped = 0;
+    
+    for (const order of orders) {
+      // Check if ticket already exists
+      const existingTicket = await ctx.db
+        .query("tickets")
+        .withIndex("by_order", (q) => q.eq("orderId", order._id))
+        .first();
+      
+      if (!existingTicket) {
+        // Check if order has a ticket number, if not generate one
+        let ticketNumber = order.ticketNumber;
+        if (!ticketNumber) {
+          const datePrefix = new Date(order._creationTime).toISOString().slice(2, 10).replace(/-/g, "");
+          const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+          ticketNumber = `AW-${datePrefix}-${randomSuffix}`;
+          
+          // Update order with ticket number
+          await ctx.db.patch(order._id, { ticketNumber });
+        }
+        
+        // Create ticket
+        await ctx.db.insert("tickets", {
+          orderId: order._id,
+          ticketNumber,
+          status: order.status === "delivered" ? "resolved" : "open",
+          messages: [{
+            sender: "system" as const,
+            text: `Ticket created for order tracking. Current order status: ${order.status}`,
+            timestamp: Date.now()
+          }],
+          createdAt: order._creationTime,
+          updatedAt: Date.now(),
+        });
+        
+        created++;
+      } else {
+        skipped++;
+      }
+    }
+    
+    return { created, skipped, total: orders.length };
   },
 });
