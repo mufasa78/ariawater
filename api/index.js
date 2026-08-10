@@ -1,15 +1,13 @@
-// Vercel serverless function handler
-// Uses the built Express app from the api-server artifact
+// Vercel serverless function handler for /api/*
+// This is the main entry point that handles ALL API routes
 
 export default async function handler(req, res) {
   try {
-    // Import the serverless build which exports the Express app
+    // Import the Express app from the built serverless bundle
     const { default: app } = await import("../artifacts/api-server/dist/serverless.mjs");
     
     // Express apps can be called directly as request handlers
-    // They have the signature: (req, res) => void
-    await new Promise((resolve, reject) => {
-      // Set up completion handlers
+    return new Promise((resolve, reject) => {
       res.on('finish', resolve);
       res.on('error', reject);
       
@@ -17,14 +15,14 @@ export default async function handler(req, res) {
       app(req, res);
     });
   } catch (error) {
-    console.error('Serverless function error:', error);
+    console.error('API serverless function error:', error);
     
-    // If response hasn't been sent yet, send error
+    // Send error response if headers haven't been sent
     if (!res.headersSent) {
-      res.status(500).json({ 
+      return res.status(500).json({ 
         error: 'Internal server error',
         message: error.message,
-        details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
