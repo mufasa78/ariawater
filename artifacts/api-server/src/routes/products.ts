@@ -51,41 +51,8 @@ router.get("/", async (req, res) => {
     inStock: inStock ? true : undefined,
     activeOnly: inStock ? true : undefined,
   }) as Record<string, unknown>[];
-  try {
-    const params = ListProductsQueryParams.safeParse(req.query);
-    if (!params.success) {
-      res.status(400).json({ error: params.error.message });
-      return;
-    }
 
-    const { category, inStock } = params.data;
-
-    req.log?.info?.({ category, inStock }, "Fetching products");
-
-    // Add timeout to Convex query
-    const products = await Promise.race([
-      convex.query(api.products.list, {
-        category: category ?? undefined,
-        inStock: inStock === "true" ? true : undefined,
-      }) as Promise<Record<string, unknown>[]>,
-      new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Convex query timeout")), 10000)
-      ),
-    ]);
-
-    req.log?.info?.({ count: products.length }, "Products fetched successfully");
-
-    res.json(ListProductsResponse.parse(products.map(mapProduct)));
-  } catch (error) {
-    req.log?.error?.({ err: error }, "Failed to fetch products");
-    
-    if (error instanceof Error && error.message === "Convex query timeout") {
-      res.status(504).json({ error: "Database query timeout" });
-      return;
-    }
-    
-    res.status(500).json({ error: "Failed to fetch products" });
-  }
+  res.json(ListProductsResponse.parse(products.map(mapProduct)));
 });
 
 // GET /api/products/:id

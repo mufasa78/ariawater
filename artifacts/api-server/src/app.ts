@@ -6,6 +6,11 @@ import { clerkMiddleware } from "@clerk/express";
 import router from "./routes/index.js";
 import { logger } from "./lib/logger.js";
 
+// Fallback backend Clerk Publishable Key from VITE_ prefix if not set natively
+if (!process.env.CLERK_PUBLISHABLE_KEY && process.env.VITE_CLERK_PUBLISHABLE_KEY) {
+  process.env.CLERK_PUBLISHABLE_KEY = process.env.VITE_CLERK_PUBLISHABLE_KEY;
+}
+
 if (!process.env.CLERK_SECRET_KEY) {
   throw new Error("CLERK_SECRET_KEY must be set.");
 }
@@ -51,13 +56,7 @@ app.use(
 );
 
 app.use(cookieParser());
-
-// Capture raw body for webhook signature verification BEFORE JSON parsing
-app.use(express.json({
-  verify: (req: any, res, buf) => {
-    req.rawBody = buf;
-  },
-}));
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Clerk authentication middleware
