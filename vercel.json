@@ -7,33 +7,5 @@
       "source": "/((?!api(?:/|$)).*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "api/index.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/[...path].js": {
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/payments/[...path].js": {
-      "memory": 1024,
-      "maxDuration": 10
-    },
-    "api/payments/webhook/lipana.js": {
-      "memory": 1024,
-      "maxDuration": 10
-    }
-  },
-  "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
-    {
-      "source": "/((?!api/).*)",
-      "destination": "/index.html"
-    }
   ]
 }
