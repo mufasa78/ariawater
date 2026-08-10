@@ -66,26 +66,6 @@ export default defineSchema({
     .index("by_ticketNumber", ["ticketNumber"])
     .index("by_orderNumber", ["orderNumber"]),
 
-  payments: defineTable({
-    orderId: v.id("orders"),
-    provider: v.string(), // "lipana", "paystack"
-    providerTransactionId: v.optional(v.string()), // Lipana transactionId or Paystack reference
-    amount: v.number(),
-    phone: v.string(),
-    status: v.union(
-      v.literal("pending"),
-      v.literal("initiated"),
-      v.literal("successful"),
-      v.literal("failed"),
-      v.literal("cancelled"),
-      v.literal("expired")
-    ),
-    createdAt: v.number(),
-    completedAt: v.optional(v.number()),
-  })
-    .index("by_order", ["orderId"])
-    .index("by_provider_transaction", ["providerTransactionId"]),
-
   orderItems: defineTable({
     orderId: v.id("orders"),
     productId: v.id("products"),
