@@ -51,25 +51,17 @@ app.use(
 );
 
 app.use(cookieParser());
-app.use(express.json());
+
+// Capture raw body for webhook signature verification BEFORE JSON parsing
+app.use(express.json({
+  verify: (req: any, res, buf) => {
+    req.rawBody = buf;
+  },
+}));
 app.use(express.urlencoded({ extended: true }));
 
 // Clerk authentication middleware
-const clerkPublishableKey =
-  process.env.CLERK_PUBLISHABLE_KEY ??
-  process.env.VITE_CLERK_PUBLISHABLE_KEY ??
-  process.env.VITE_CLERK_PUBLIC_KEY;
-
-if (!clerkPublishableKey) {
-  throw new Error("CLERK_PUBLISHABLE_KEY or VITE_CLERK_PUBLISHABLE_KEY must be set.");
-}
-
-app.use(
-  clerkMiddleware({
-    publishableKey: clerkPublishableKey,
-    secretKey: process.env.CLERK_SECRET_KEY,
-  }),
-);
+app.use(clerkMiddleware());
 
 // ── Security headers ─────────────────────────────────────────────────────────
 app.use((_req, res, next) => {
@@ -98,9 +90,6 @@ app.use((_req, res, next) => {
 
 // Mount routes directly to support both with and without /api prefix
 app.use("/", router);
-// Replit preserves the artifact's `/api` service path when proxying requests.
-// Keep the prefix here so `/api/products`, `/api/orders`, and `/api/healthz`
-// reach the same route handlers in both preview and production.
 app.use("/api", router);
 
 // ── Global error handler — must be last, must have 4 args ────────────────────

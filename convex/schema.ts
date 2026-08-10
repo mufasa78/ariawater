@@ -39,6 +39,7 @@ export default defineSchema({
     customerId: v.optional(v.string()), // Optional for guest orders (supports Clerk strings and old Convex IDs)
     customerName: v.optional(v.string()), // Guest customer name
     customerEmail: v.optional(v.string()), // Guest customer email
+    orderNumber: v.optional(v.string()), // Human-readable order number, e.g. ARI-20260808-001
     status: v.union(
       v.literal("received"),
       v.literal("processing"),
@@ -62,7 +63,28 @@ export default defineSchema({
     .index("by_customer", ["customerId"])
     .index("by_status", ["status"])
     .index("by_paystackRef", ["paystackRef"])
-    .index("by_ticketNumber", ["ticketNumber"]),
+    .index("by_ticketNumber", ["ticketNumber"])
+    .index("by_orderNumber", ["orderNumber"]),
+
+  payments: defineTable({
+    orderId: v.id("orders"),
+    provider: v.string(), // "lipana", "paystack"
+    providerTransactionId: v.optional(v.string()), // Lipana transactionId or Paystack reference
+    amount: v.number(),
+    phone: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("initiated"),
+      v.literal("successful"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+      v.literal("expired")
+    ),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_order", ["orderId"])
+    .index("by_provider_transaction", ["providerTransactionId"]),
 
   orderItems: defineTable({
     orderId: v.id("orders"),
@@ -79,6 +101,28 @@ export default defineSchema({
   })
     .index("by_order", ["orderId"])
     .index("by_customer", ["customerId"]),
+
+  payments: defineTable({
+    orderId: v.id("orders"),
+    provider: v.literal("lipana"),
+    providerTransactionId: v.optional(v.string()),
+    amount: v.number(),
+    phone: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("initiated"),
+      v.literal("successful"),
+      v.literal("failed"),
+      v.literal("cancelled"),
+      v.literal("expired")
+    ),
+    providerReference: v.optional(v.string()),
+    failureReason: v.optional(v.string()),
+    createdAt: v.number(),
+    completedAt: v.optional(v.number()),
+  })
+    .index("by_order", ["orderId"])
+    .index("by_provider_transaction", ["providerTransactionId"]),
 
   magicLinkTokens: defineTable({
     email: v.string(),

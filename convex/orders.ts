@@ -183,15 +183,19 @@ export const create = mutation({
 
     const now = Date.now();
     
-    // Generate a simple ticket number for tracking
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    // Generate order number for tracking (ARI-YYYYMMDD-XXXX)
     const datePrefix = new Date().toISOString().slice(2, 10).replace(/-/g, "");
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    const orderNumber = `ARI-${datePrefix}-${randomSuffix}`;
+    
+    // Generate ticket number for support tracking
     const ticketNumber = `AW-${datePrefix}-${randomSuffix}`;
     
     const orderId = await ctx.db.insert("orders", {
       customerId,
       customerName,
       customerEmail,
+      orderNumber,
       status: "received",
       totalKes,
       deliveryAddress,

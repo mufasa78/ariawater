@@ -272,6 +272,7 @@ export type OrderInputPaymentMethod = typeof OrderInputPaymentMethod[keyof typeo
 
 export const OrderInputPaymentMethod = {
   mpesa: 'mpesa',
+  pay_later: 'pay_later',
 } as const;
 
 export interface OrderInput {
@@ -411,6 +412,10 @@ export interface PaymentInitInput {
 export interface PaymentInitResponse {
   authorizationUrl: string;
   reference: string;
+  /** @nullable */
+  amountKes?: number;
+  /** @nullable */
+  message?: string;
 }
 
 export interface PaymentVerifyInput {

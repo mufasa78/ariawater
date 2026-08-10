@@ -11,4 +11,5 @@ export type OrderInputPaymentMethod = typeof OrderInputPaymentMethod[keyof typeo
 
 export const OrderInputPaymentMethod = {
   mpesa: 'mpesa',
+  pay_later: 'pay_later',
 } as const;
