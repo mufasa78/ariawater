@@ -30,11 +30,11 @@ router.post("/initialize", optionalAuth, async (req, res) => {
     const paymentId = payment._id as string;
     const result = await getLipanaClient().initiatePayment({ phone: LipanaClient.formatPhoneNumber(phoneNumber), amount: amountKes });
     if (!result.success || !result.data) {
-      await convex.mutation(api.payments.markFailed, { id: paymentId as any });
+      await convex.mutation(api.payments.markFailedById, { paymentId: paymentId as any, failureReason: result.message || "Lipana rejected the payment request" });
       res.json(InitializePaymentResponse.parse({ authorizationUrl: "", reference: paymentId, amountKes, message: result.message || "M-Pesa prompt could not be sent" }));
       return;
     }
-    await convex.mutation(api.payments.updateProviderTransactionId, { id: paymentId as any, providerTransactionId: result.data.transactionId, status: "initiated" });
+    await convex.mutation(api.payments.updateTransactionId, { paymentId: paymentId as any, providerTransactionId: result.data.transactionId, status: "initiated" });
     res.json(InitializePaymentResponse.parse({ authorizationUrl: `mpesa://stk-push/${result.data.transactionId}`, reference: paymentId, amountKes, message: result.data.message || result.message }));
   } catch (error) {
     req.log?.error?.({ err: error }, "Failed to initialize Lipana payment");
@@ -65,7 +65,11 @@ router.post("/webhook/lipana", async (req, res) => {
   const payment = await convex.query(api.payments.getByProviderTransactionId, { providerTransactionId: transactionId }) as Record<string, unknown> | null;
   if (!payment) { res.status(404).json({ error: "Payment not found" }); return; }
   const successful = req.body?.event === "payment.success" || req.body?.data?.status === "success";
-  await convex.mutation(api.payments[successful ? "markSuccessful" : "markFailed"] as any, { id: payment._id as any });
+  await convex.mutation(api.payments.markByProviderTransactionId, {
+    providerTransactionId: transactionId,
+    successful,
+    failureReason: successful ? undefined : req.body?.data?.message || "Lipana payment failed",
+  });
   res.json({ success: true });
 });
 

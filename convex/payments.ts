@@ -98,6 +98,34 @@ export const create = mutation({
   },
 });
 
+export const markByProviderTransactionId = mutation({
+  args: {
+    providerTransactionId: v.string(),
+    successful: v.boolean(),
+    failureReason: v.optional(v.string()),
+  },
+  handler: async (ctx, { providerTransactionId, successful, failureReason }) => {
+    const payment = await ctx.db
+      .query("payments")
+      .withIndex("by_provider_transaction", (q) => q.eq("providerTransactionId", providerTransactionId))
+      .first();
+    if (!payment) throw new ConvexError("Payment not found");
+    if (payment.status === "successful" || payment.status === "failed") return;
+
+    const completedAt = Date.now();
+    await ctx.db.patch(payment._id, {
+      status: successful ? "successful" : "failed",
+      completedAt,
+      failureReason,
+    });
+    await ctx.db.patch(payment.orderId, {
+      paymentStatus: successful ? "completed" : "failed",
+      ...(successful ? { status: "processing" } : {}),
+      updatedAt: completedAt,
+    });
+  },
+});
+
 export const markPaymentSuccessful = internalMutation({
   args: {
     providerTransactionId: v.string(),
@@ -186,8 +214,31 @@ export const markPaymentFailed = internalMutation({
   },
 });
 
-// Update the payment record with Lipana's transaction ID after initiation
-export const updateTransactionId = internalMutation({
+// Update the payment record with Lipana's transaction ID after initiation.
+// This public mutation is used by the Express API after it has initiated the provider request.
+export const markFailedById = mutation({
+  args: {
+    paymentId: v.id("payments"),
+    failureReason: v.optional(v.string()),
+  },
+  handler: async (ctx, { paymentId, failureReason }) => {
+    const payment = await ctx.db.get(paymentId);
+    if (!payment) throw new ConvexError("Payment not found");
+    if (payment.status === "successful") return;
+
+    await ctx.db.patch(paymentId, {
+      status: "failed",
+      failureReason,
+      completedAt: Date.now(),
+    });
+    await ctx.db.patch(payment.orderId, {
+      paymentStatus: "failed",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const updateTransactionId = mutation({
   args: {
     paymentId: v.id("payments"),
     providerTransactionId: v.string(),
