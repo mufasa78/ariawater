@@ -396,3 +396,29 @@ export const createMissingTickets = mutation({
     return { created, skipped, total: orders.length };
   },
 });
+
+// Debug query to check all orders and their tickets
+export const debugOrdersAndTickets = query({
+  args: {},
+  handler: async (ctx, {}) => {
+    const orders = await ctx.db.query("orders").take(10);
+    const results = await Promise.all(
+      orders.map(async (order) => {
+        const ticket = await ctx.db
+          .query("tickets")
+          .withIndex("by_order", (q) => q.eq("orderId", order._id))
+          .first();
+        
+        return {
+          orderId: order._id,
+          orderTicketNumber: order.ticketNumber,
+          hasTicket: !!ticket,
+          ticketNumber: ticket?.ticketNumber,
+          ticketStatus: ticket?.status,
+        };
+      })
+    );
+    
+    return results;
+  },
+});
