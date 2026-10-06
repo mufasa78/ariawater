@@ -65,7 +65,7 @@ All tokens are CSS custom properties in `artifacts/ari-water/src/index.css` (HSL
 - **Checkout**: guest checkout supported — order creation, payment initialize/verify use `optionalAuth`. Orders get an `orderNumber` (e.g. `ARI-20260808-001`) and a `ticketNumber` for tracking/support.
 - **Payments**: Lipana M-PESA STK push (`lib/lipana-client.ts`, `LIPANA_PRODUCTION=true` for live). The Lipana webhook is a **Convex HTTP action** (`convex/http.ts`, path `/lipana/webhook`) that verifies `x-lipana-signature` and marks payments via `internal.payments.markByProviderTransactionId` — not an Express route.
 - **Routing**: public pages (Landing, Shop, Track, About, policies), Clerk auth pages (`/login`, `/sign-up` with `:rest*` catch-alls), admin pages behind `AdminRoute` role guard (dashboard, orders, products, marketing, accounting).
-- **Deployment**: dev on Replit-style setup (`.replit`, PNPM_WORKSPACE); production cPanel from `deploy/` (`deploy/public` = built frontend for `public_html`, `deploy/api` = bundled `serverless.mjs` Express app with `.env.production`). `deploy/api/serverless.mjs` is a 2.3 MB esbuild bundle — never edit it by hand; it's generated from `artifacts/api-server`.
+- **Deployment**: dev via PNPM_WORKSPACE (run `pnpm --filter @workspace/api-server dev` and `pnpm --filter @workspace/ari-water dev`); production cPanel from `deploy/` (`deploy/public` = built frontend for `public_html`, `deploy/api` = bundled `serverless.mjs` Express app with `.env.production`). `deploy/api/serverless.mjs` is a 2.3 MB esbuild bundle — never edit it by hand; it's generated from `artifacts/api-server`.
 - **`.migration-backup/`** holds a snapshot of the old codebase — reference-only, never edit; it also contains older docs.
 
 ## Commands
