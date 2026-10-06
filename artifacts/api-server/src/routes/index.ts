@@ -10,6 +10,7 @@ import uploadsRouter from "./uploads.js";
 import ticketsRouter from "./tickets.js";
 import receiptsRouter from "./receipts.js";
 import debugRouter from "./debug.js";
+import usersRouter from "./users.js";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use("/uploads", uploadsRouter);
 router.use("/tickets", ticketsRouter);
 router.use("/receipts", receiptsRouter);
 router.use("/debug", debugRouter);
+router.use("/admin/users", usersRouter);
 
 export default router;

@@ -8,6 +8,13 @@
       "maxDuration": 10
     }
   },
+  "redirects": [
+    {
+      "source": "https://www.aritwin.co.ke/:path*",
+      "destination": "https://aritwin.co.ke/:path*",
+      "permanent": true
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",

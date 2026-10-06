@@ -38,9 +38,7 @@ export default function Login() {
             routing="path"
             path="/login"
             signUpUrl="/sign-up"
-            afterSignInUrl="/login"
-            fallbackRedirectUrl="/admin"
-            forceRedirectUrl="/admin"
+            fallbackRedirectUrl="/shop"
             appearance={{
               elements: {
                 rootBox: 'mx-auto',

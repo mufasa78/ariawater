@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import { Navbar } from '@/components/layout/Navbar';
 import { Footer } from '@/components/layout/Footer';
-import { LayoutDashboard, Package, ShoppingBag, LogOut, Megaphone, Calculator } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, LogOut, Megaphone, Calculator, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getInitials } from '@/lib/utils';
 
@@ -48,6 +48,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
     { href: '/admin/products', label: 'Products', icon: Package },
     { href: '/admin/marketing', label: 'Marketing', icon: Megaphone },
     { href: '/admin/accounting', label: 'Accounting', icon: Calculator },
+    { href: '/admin/users', label: 'Users', icon: Users },
   ];
 
   return (
